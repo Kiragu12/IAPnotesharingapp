@@ -1,0 +1,21 @@
+# Node & vendor cache
+node_modules/
+vendor/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# PHPStorm/IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
+logs/
+
+# Env files
+.env
+
+# Exclude nested cloned repo
+tol/
