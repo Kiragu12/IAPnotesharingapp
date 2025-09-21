@@ -16,31 +16,28 @@ $conf['admin_email'] = 'admin@icsbacademy.com';
 $conf['site_lang'] = 'en';
 require_once __DIR__ . '/Lang/' . $conf['site_lang'] . '.php';
 
-// Database configuration
+// Database configuration (fill with your DB)
 $conf['db_type'] = 'pdo';
 $conf['db_host'] = 'switchback.proxy.rlwy.net';
 $conf['db_port'] = '44505';
 $conf['db_user'] = 'root';
-$conf['db_pass'] = 'XhgSaEdzTMnBcdgPrEUWBVSivwOVPgHG';
+$conf['db_pass'] = '<your_db_password>';
 $conf['db_name'] = 'railway';
 
-// Email configuration
-$conf['mail_type'] = 'smtp'; // Options: 'smtp' or 'mail'
+// Email configuration (fill with your SMTP)
+$conf['mail_type'] = 'smtp'; // 'smtp' or 'mail'
 $conf['smtp_host'] = 'smtp.gmail.com';
-$conf['smtp_user'] = 'example@gmail.com'; // Replace with your actual SMTP email
-$conf['smtp_pass'] = 'yourpasswordhere'; // Replace with your actual SMTP password
-$conf['smtp_port'] = 465;
-$conf['smtp_secure'] = 'ssl';
-
+$conf['smtp_user'] = '<your_email@example.com>';
+$conf['smtp_pass'] = '<your_app_password>'; // For Gmail use an App Password
+$conf['smtp_port'] = 465; // 465 for SSL, 587 for TLS
+$conf['smtp_secure'] = 'ssl'; // 'ssl' or 'tls'
 
 // Set password length
 $conf['min_password_length'] = 8;
 
-// Set valid email domain (for example: 'icsbacademy.com')
+// Valid email domains
 $conf['valid_email_domain'] = ['icsbacademy.com', 'yahoo.com', 'gmail.com', 'outlook.com', 'hotmail.com', 'strathmore.edu'];
 
-// Set random verification code
+// Registration verification code defaults
 $conf['reg_ver_code'] = rand(100000, 999999);
-
-// Set verification code expiry time (in minutes)
-$conf['ver_code_expiry'] = 10;
+$conf['ver_code_expiry'] = 10; // minutes
