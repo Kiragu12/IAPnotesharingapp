@@ -77,4 +77,62 @@ class auth{
 
     }
     }
+
+    // Handle login form submission (DB-backed)
+    public function login($conf, $ObjFncs){
+        // Expecting POST with name 'signin'
+        if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['signin'])){
+            // Basic sanitization
+            $email = isset($_POST['email']) ? strtolower(trim($_POST['email'])) : '';
+            $password = isset($_POST['password']) ? $_POST['password'] : '';
+
+            // Basic validation
+            if(empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)){
+                $ObjFncs->setMsg('msg', 'Please provide a valid email address.', 'danger');
+                return false;
+            }
+
+            if(empty($password)){
+                $ObjFncs->setMsg('msg', 'Please provide your password.', 'danger');
+                return false;
+            }
+
+            try{
+                // Use the Database class directly to look up the user
+                $db = new Database($conf);
+                $sql = "SELECT id, email, password FROM users WHERE email = :email LIMIT 1";
+                $user = $db->fetchOne($sql, [':email' => $email]);
+
+                if(!$user || !isset($user['password']) || !isset($user['id'])){
+                    $ObjFncs->setMsg('msg', 'Invalid email or password.', 'danger');
+                    return false;
+                }
+
+                // Verify password against hashed value in DB
+                if(password_verify($password, $user['password'])){
+                    // Successful login: start session and set user id
+                    if(session_status() !== PHP_SESSION_ACTIVE){
+                        session_start();
+                    }
+                    // Regenerate session id for session fixation protection
+                    if(function_exists('session_regenerate_id')){
+                        session_regenerate_id(true);
+                    }
+                    $_SESSION['user_id'] = $user['id'];
+
+                    // Redirect to dashboard
+                    header('Location: dashboard.php');
+                    exit;
+                } else {
+                    $ObjFncs->setMsg('msg', 'Invalid email or password.', 'danger');
+                    return false;
+                }
+
+            }catch(Exception $e){
+                error_log('Login error: ' . $e->getMessage());
+                $ObjFncs->setMsg('msg', 'An error occurred while trying to log you in. Please try again later.', 'danger');
+                return false;
+            }
+        }
+    }
 }
