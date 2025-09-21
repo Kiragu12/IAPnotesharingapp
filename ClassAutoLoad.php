@@ -21,4 +21,10 @@ $ObjAuth = new auth();
 $ObjFncs = new fncs();
 
 
-$ObjAuth->signup($conf, $ObjFncs, $lang, $ObjSendMail);
+// Handle login if signin form submitted
+// Load provider helpers (if present) so get_user_by_email() is available
+if (file_exists(__DIR__ . '/Global/providers.php')) {
+    require_once __DIR__ . '/Global/providers.php';
+}
+
+$ObjAuth->login($conf, $ObjFncs);
