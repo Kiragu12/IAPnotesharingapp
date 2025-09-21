@@ -19,3 +19,6 @@ logs/
 
 # Exclude nested cloned repo
 tol/
+
+# Local config with secrets
+conf.php
