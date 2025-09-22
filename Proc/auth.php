@@ -39,6 +39,8 @@ class auth{
             if(strlen($password) < $conf['min_password_length']) {
                 $errors['password_error'] = "Password must be at least " . $conf['min_password_length'] . " characters long";
             }
+            //HAsh the password
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
             // If there are errors, display them
             if(!count($errors)){
@@ -74,6 +76,9 @@ class auth{
                 $ObjFncs->setMsg('errors', $errors, 'danger');
                 $ObjFncs->setMsg('msg', 'Please fix the errors below and try again.', 'danger');
             }
+            
+            
+            
 
     }
     }
