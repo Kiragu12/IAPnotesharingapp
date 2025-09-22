@@ -27,7 +27,7 @@ class auth{
 
             // Verify email format
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $errors['mailFormat_error'] = "Invalid email format";
+                $errors['mailFormat_error'] = "Invalid Email format";
             }
 
             // Verify if the email domainis valid
@@ -39,6 +39,8 @@ class auth{
             if(strlen($password) < $conf['min_password_length']) {
                 $errors['password_error'] = "Password must be at least " . $conf['min_password_length'] . " characters long";
             }
+            //HAsh the password
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
             // If there are errors, display them
             if(!count($errors)){
@@ -74,6 +76,9 @@ class auth{
                 $ObjFncs->setMsg('errors', $errors, 'danger');
                 $ObjFncs->setMsg('msg', 'Please fix the errors below and try again.', 'danger');
             }
+            
+            
+            
 
     }
     }
