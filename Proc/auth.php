@@ -27,7 +27,7 @@ class auth{
 
             // Verify email format
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $errors['mailFormat_error'] = "Invalid email format";
+                $errors['mailFormat_error'] = "Invalid Email format";
             }
 
             // Verify if the email domainis valid
