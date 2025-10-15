@@ -10,7 +10,7 @@ use PHPMailer\PHPMailer\Exception;
 class SendMail {
     public function Send_Mail($conf, $mailCnt) {
         //Load Composer's autoloader (created by composer, not included with PHPMailer)
-        require 'Plugins/PHPMailer/vendor/autoload.php';
+        require __DIR__ . '/../vendor/autoload.php';
         //Create an instance; passing `true` enables exceptions
         $mail = new PHPMailer(true);
 

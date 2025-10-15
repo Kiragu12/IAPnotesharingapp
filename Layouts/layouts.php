@@ -80,7 +80,7 @@ class Layouts {
 ?>
 
             <footer class="pt-3 mt-4 text-body-secondary border-top">
-            <p>Copyrights &copy; <?php echo date("Y") . " {$conf['site_name']}. All rights reserved.</p>"; ?>
+            <p>Copyrights &copy; <?php echo date("Y") . " {$conf['site_name']}. All rights reserved."; ?></p>
             </footer>
          </div>
       </main>
