@@ -11,7 +11,7 @@ class Layouts {
       <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
       <meta name="generator" content="Astro v5.13.2">
       <title><?php echo $conf['site_name']; ?></title>
-      <link href="<?php echo $conf['site_url']; ?>/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+      <link href="css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
    </head>
 <?php
     }
@@ -84,7 +84,7 @@ class Layouts {
             </footer>
          </div>
       </main>
-      <script src="<?php echo $conf['site_url']; ?>/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+      <script src="js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
    </body>
 </html>
 
