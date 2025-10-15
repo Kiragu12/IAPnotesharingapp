@@ -11,7 +11,7 @@ class Layouts {
       <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
       <meta name="generator" content="Astro v5.13.2">
       <title><?php echo $conf['site_name']; ?></title>
-      <link href="<?php echo $conf['site_url']; ?>/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+      <link href="css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
    </head>
 <?php
     }
@@ -80,11 +80,11 @@ class Layouts {
 ?>
 
             <footer class="pt-3 mt-4 text-body-secondary border-top">
-            <p>Copyrights &copy; <?php echo date("Y") . " {$conf['site_name']}. All rights reserved.</p>"; ?>
+            <p>Copyrights &copy; <?php echo date("Y") . " {$conf['site_name']}. All rights reserved."; ?></p>
             </footer>
          </div>
       </main>
-      <script src="<?php echo $conf['site_url']; ?>/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+      <script src="js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
    </body>
 </html>
 
