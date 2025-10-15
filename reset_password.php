@@ -371,44 +371,104 @@ if (isset($_POST['reset_password']) && !$token_expired) {
                 </div>
             <?php endif; ?>
 
-            <form method="POST" action="" id="resetForm">
-                <div class="form-floating input-icon">
-                    <input type="password" 
-                           class="form-control <?php echo isset($errors['password_error']) ? 'is-invalid' : ''; ?>" 
-                           id="password" 
-                           name="password" 
-                           placeholder="New Password"
-                           minlength="8"
-                           required>
-                    <label for="password">New Password</label>
-                    <i class="bi bi-eye password-toggle" onclick="togglePassword('password')"></i>
-                    <?php if (isset($errors['password_error'])): ?>
-                        <div class="invalid-feedback">
-                            <?php echo $errors['password_error']; ?>
+            <form method="POST" action="" id="resetForm" class="needs-validation" novalidate>
+                <!-- New Password Field with Bootstrap Input Group -->
+                <div class="mb-3">
+                    <label for="password" class="form-label fw-semibold text-dark">
+                        <i class="bi bi-lock me-2 text-primary"></i>New Password
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px;">
+                            <i class="bi bi-lock text-primary"></i>
+                        </span>
+                        <input type="password" 
+                               class="form-control border-start-0 border-end-0 <?php echo isset($errors['password_error']) ? 'is-invalid' : ''; ?>" 
+                               id="password" 
+                               name="password" 
+                               placeholder="Enter new password"
+                               style="background: rgba(255, 255, 255, 0.9); padding-left: 0.5rem; padding-right: 0.5rem;"
+                               minlength="8"
+                               required>
+                        <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePassword" style="border-radius: 0 12px 12px 0; background: rgba(255, 255, 255, 0.9);">
+                            <i class="bi bi-eye" id="eyeIcon"></i>
+                        </button>
+                        <div class="valid-feedback">
+                            <i class="bi bi-check-circle me-1"></i>Strong password!
                         </div>
-                    <?php endif; ?>
-                    <div class="password-strength" id="passwordStrength"></div>
+                        <?php if (isset($errors['password_error'])): ?>
+                            <div class="invalid-feedback">
+                                <i class="bi bi-exclamation-circle me-1"></i><?php echo $errors['password_error']; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                    <!-- Password Strength Indicator -->
+                    <div class="mt-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Password strength:</small>
+                            <small id="strengthText" class="text-muted">Weak</small>
+                        </div>
+                        <div class="progress" style="height: 4px; border-radius: 2px;">
+                            <div id="strengthBar" class="progress-bar" role="progressbar" style="width: 0%; transition: all 0.3s ease;"></div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="form-floating input-icon">
-                    <input type="password" 
-                           class="form-control <?php echo isset($errors['confirm_password_error']) ? 'is-invalid' : ''; ?>" 
-                           id="confirm_password" 
-                           name="confirm_password" 
-                           placeholder="Confirm Password"
-                           required>
-                    <label for="confirm_password">Confirm Password</label>
-                    <i class="bi bi-eye password-toggle" onclick="togglePassword('confirm_password')"></i>
-                    <?php if (isset($errors['confirm_password_error'])): ?>
-                        <div class="invalid-feedback">
-                            <?php echo $errors['confirm_password_error']; ?>
+                <!-- Confirm Password Field with Bootstrap Input Group -->
+                <div class="mb-4">
+                    <label for="confirm_password" class="form-label fw-semibold text-dark">
+                        <i class="bi bi-shield-check me-2 text-primary"></i>Confirm Password
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px;">
+                            <i class="bi bi-shield-check text-primary"></i>
+                        </span>
+                        <input type="password" 
+                               class="form-control border-start-0 border-end-0 <?php echo isset($errors['confirm_password_error']) ? 'is-invalid' : ''; ?>" 
+                               id="confirm_password" 
+                               name="confirm_password" 
+                               placeholder="Confirm your password"
+                               style="background: rgba(255, 255, 255, 0.9); padding-left: 0.5rem; padding-right: 0.5rem;"
+                               required>
+                        <button class="btn btn-outline-secondary border-start-0" type="button" id="toggleConfirmPassword" style="border-radius: 0 12px 12px 0; background: rgba(255, 255, 255, 0.9);">
+                            <i class="bi bi-eye" id="eyeIcon2"></i>
+                        </button>
+                        <div class="valid-feedback">
+                            <i class="bi bi-check-circle me-1"></i>Passwords match!
                         </div>
-                    <?php endif; ?>
+                        <?php if (isset($errors['confirm_password_error'])): ?>
+                            <div class="invalid-feedback">
+                                <i class="bi bi-exclamation-circle me-1"></i><?php echo $errors['confirm_password_error']; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
-                <button type="submit" name="reset_password" class="btn btn-reset">
-                    <i class="bi bi-shield-check me-2"></i>Reset Password
-                </button>
+                <!-- Password Requirements Card -->
+                <div class="card border-0 bg-light mb-4">
+                    <div class="card-body py-3">
+                        <h6 class="fw-semibold mb-2">
+                            <i class="bi bi-info-circle me-2 text-info"></i>Password Requirements
+                        </h6>
+                        <ul class="list-unstyled mb-0 small text-muted">
+                            <li><i class="bi bi-check2 me-2" id="req1"></i>At least 8 characters</li>
+                            <li><i class="bi bi-check2 me-2" id="req2"></i>One uppercase letter</li>
+                            <li><i class="bi bi-check2 me-2" id="req3"></i>One lowercase letter</li>
+                            <li><i class="bi bi-check2 me-2" id="req4"></i>One number</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" name="reset_password" class="btn btn-reset position-relative" id="submitBtn">
+                        <span id="submitText">
+                            <i class="bi bi-shield-check me-2"></i>Reset Password
+                        </span>
+                        <span id="submitSpinner" class="d-none">
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            Resetting Password...
+                        </span>
+                    </button>
+                </div>
             </form>
         <?php endif; ?>
 
@@ -422,65 +482,68 @@ if (isset($_POST['reset_password']) && !$token_expired) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        function togglePassword(fieldId) {
-            const field = document.getElementById(fieldId);
-            const icon = field.nextElementSibling.nextElementSibling;
-            
-            if (field.type === 'password') {
-                field.type = 'text';
-                icon.classList.remove('bi-eye');
-                icon.classList.add('bi-eye-slash');
-            } else {
-                field.type = 'password';
-                icon.classList.remove('bi-eye-slash');
-                icon.classList.add('bi-eye');
-            }
-        }
+        // Bootstrap Form Validation
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                var forms = document.getElementsByClassName('needs-validation');
+                var validation = Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        } else {
+                            showLoadingState();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
 
-        // Password strength checker
+        // Password visibility toggle
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eyeIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.className = 'bi bi-eye-slash';
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.className = 'bi bi-eye';
+            }
+        });
+
+        document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
+            const confirmPasswordInput = document.getElementById('confirm_password');
+            const eyeIcon2 = document.getElementById('eyeIcon2');
+            
+            if (confirmPasswordInput.type === 'password') {
+                confirmPasswordInput.type = 'text';
+                eyeIcon2.className = 'bi bi-eye-slash';
+            } else {
+                confirmPasswordInput.type = 'password';
+                eyeIcon2.className = 'bi bi-eye';
+            }
+        });
+
+        // Enhanced password strength checker
         document.getElementById('password')?.addEventListener('input', function() {
             const password = this.value;
-            const strengthDiv = document.getElementById('passwordStrength');
+            const strength = calculatePasswordStrength(password);
+            updatePasswordStrengthUI(strength);
+            updateRequirements(password);
             
-            let strength = 0;
-            let feedback = [];
-            
-            if (password.length >= 8) strength++;
-            else feedback.push('At least 8 characters');
-            
-            if (/[a-z]/.test(password)) strength++;
-            else feedback.push('One lowercase letter');
-            
-            if (/[A-Z]/.test(password)) strength++;
-            else feedback.push('One uppercase letter');
-            
-            if (/\d/.test(password)) strength++;
-            else feedback.push('One number');
-            
-            if (/[^A-Za-z0-9]/.test(password)) strength++;
-            else feedback.push('One special character');
-            
-            let strengthText = '';
-            let strengthClass = '';
-            
-            if (strength < 3) {
-                strengthText = 'Weak';
-                strengthClass = 'strength-weak';
-            } else if (strength < 4) {
-                strengthText = 'Medium';
-                strengthClass = 'strength-medium';
-            } else {
-                strengthText = 'Strong';
-                strengthClass = 'strength-strong';
-            }
-            
+            // Real-time validation
             if (password.length > 0) {
-                strengthDiv.innerHTML = `<span class="${strengthClass}">Password strength: ${strengthText}</span>`;
-                if (feedback.length > 0 && strength < 4) {
-                    strengthDiv.innerHTML += `<br><small>Missing: ${feedback.join(', ')}</small>`;
+                if (strength.score >= 3) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else {
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
                 }
-            } else {
-                strengthDiv.innerHTML = '';
             }
         });
 
@@ -490,7 +553,7 @@ if (isset($_POST['reset_password']) && !$token_expired) {
             const confirmPassword = this.value;
             
             if (confirmPassword.length > 0) {
-                if (password === confirmPassword) {
+                if (password === confirmPassword && password.length >= 8) {
                     this.classList.remove('is-invalid');
                     this.classList.add('is-valid');
                 } else {
@@ -499,6 +562,98 @@ if (isset($_POST['reset_password']) && !$token_expired) {
                 }
             } else {
                 this.classList.remove('is-valid', 'is-invalid');
+            }
+        });
+
+        function calculatePasswordStrength(password) {
+            let score = 0;
+            let feedback = [];
+            
+            if (password.length >= 8) score++;
+            if (/[a-z]/.test(password)) score++;
+            if (/[A-Z]/.test(password)) score++;
+            if (/[0-9]/.test(password)) score++;
+            if (/[^A-Za-z0-9]/.test(password)) score++;
+            
+            return { score, feedback };
+        }
+
+        function updatePasswordStrengthUI(strength) {
+            const strengthBar = document.getElementById('strengthBar');
+            const strengthText = document.getElementById('strengthText');
+            
+            const percentage = (strength.score / 5) * 100;
+            strengthBar.style.width = percentage + '%';
+            
+            if (strength.score <= 1) {
+                strengthBar.className = 'progress-bar bg-danger';
+                strengthText.textContent = 'Weak';
+                strengthText.className = 'text-danger';
+            } else if (strength.score <= 2) {
+                strengthBar.className = 'progress-bar bg-warning';
+                strengthText.textContent = 'Fair';
+                strengthText.className = 'text-warning';
+            } else if (strength.score <= 3) {
+                strengthBar.className = 'progress-bar bg-info';
+                strengthText.textContent = 'Good';
+                strengthText.className = 'text-info';
+            } else if (strength.score <= 4) {
+                strengthBar.className = 'progress-bar bg-primary';
+                strengthText.textContent = 'Strong';
+                strengthText.className = 'text-primary';
+            } else {
+                strengthBar.className = 'progress-bar bg-success';
+                strengthText.textContent = 'Very Strong';
+                strengthText.className = 'text-success';
+            }
+        }
+
+        function updateRequirements(password) {
+            const requirements = [
+                { id: 'req1', test: password.length >= 8 },
+                { id: 'req2', test: /[A-Z]/.test(password) },
+                { id: 'req3', test: /[a-z]/.test(password) },
+                { id: 'req4', test: /[0-9]/.test(password) }
+            ];
+
+            requirements.forEach(req => {
+                const element = document.getElementById(req.id);
+                if (req.test) {
+                    element.className = 'bi bi-check-circle-fill me-2 text-success';
+                } else {
+                    element.className = 'bi bi-check2 me-2 text-muted';
+                }
+            });
+        }
+
+        function showLoadingState() {
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            const submitSpinner = document.getElementById('submitSpinner');
+            
+            submitBtn.disabled = true;
+            submitText.classList.add('d-none');
+            submitSpinner.classList.remove('d-none');
+        }
+
+        // Enhanced form input effects
+        document.querySelectorAll('.form-control').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'translateY(-1px)';
+                this.parentElement.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.15)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'translateY(0)';
+                this.parentElement.style.boxShadow = 'none';
+            });
+        });
+
+        // Auto-focus password field
+        window.addEventListener('load', function() {
+            const passwordField = document.getElementById('password');
+            if (passwordField) {
+                passwordField.focus();
             }
         });
     </script>

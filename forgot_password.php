@@ -302,28 +302,66 @@ if (isset($_POST['forgot_password'])) {
                 </div>
             <?php endif; ?>
 
-            <form method="POST" action="" id="forgotForm">
-                <div class="form-floating input-icon">
-                    <input type="email" 
-                           class="form-control <?php echo isset($errors['email_error']) ? 'is-invalid' : ''; ?>" 
-                           id="email" 
-                           name="email" 
-                           placeholder="Enter your email"
-                           value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>"
-                           required>
-                    <label for="email">Email Address</label>
-                    <i class="bi bi-envelope"></i>
-                    <?php if (isset($errors['email_error'])): ?>
-                        <div class="invalid-feedback">
-                            <?php echo $errors['email_error']; ?>
+            <form method="POST" action="" id="forgotForm" class="needs-validation" novalidate>
+                <div class="mb-3">
+                    <label for="email" class="form-label fw-semibold text-dark">
+                        <i class="bi bi-envelope me-2 text-primary"></i>Email Address
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px;">
+                            <i class="bi bi-envelope text-primary"></i>
+                        </span>
+                        <input type="email" 
+                               class="form-control border-start-0 <?php echo isset($errors['email_error']) ? 'is-invalid' : ''; ?>" 
+                               id="email" 
+                               name="email" 
+                               placeholder="Enter your email address"
+                               value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>"
+                               style="border-radius: 0 12px 12px 0; background: rgba(255, 255, 255, 0.9); padding-left: 0.5rem;"
+                               required>
+                        <div class="valid-feedback">
+                            <i class="bi bi-check-circle me-1"></i>Valid email format!
                         </div>
-                    <?php endif; ?>
+                        <?php if (isset($errors['email_error'])): ?>
+                            <div class="invalid-feedback">
+                                <i class="bi bi-exclamation-circle me-1"></i><?php echo $errors['email_error']; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="form-text mt-2">
+                        <i class="bi bi-info-circle me-1"></i>
+                        We'll send reset instructions to this email address
+                    </div>
                 </div>
 
-                <button type="submit" name="forgot_password" class="btn btn-forgot" id="submitBtn">
-                    <span class="loading-spinner spinner-border spinner-border-sm" role="status"></span>
-                    <i class="bi bi-send me-2"></i>Send Reset Instructions
-                </button>
+                <div class="d-grid mb-3">
+                    <button type="submit" name="forgot_password" class="btn btn-forgot position-relative" id="submitBtn">
+                        <span id="submitText">
+                            <i class="bi bi-send me-2"></i>Send Reset Instructions
+                        </span>
+                        <span id="submitSpinner" class="d-none">
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            Sending Instructions...
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Quick Actions Card -->
+                <div class="card border-0 bg-light mb-3">
+                    <div class="card-body py-3">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h6 class="mb-1 fw-semibold">Need immediate help?</h6>
+                                <small class="text-muted">Contact our support team</small>
+                            </div>
+                            <div class="col-auto">
+                                <a href="mailto:support@noteshareacademy.com" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-headset me-1"></i>Support
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </form>
         <?php endif; ?>
 
@@ -337,27 +375,95 @@ if (isset($_POST['forgot_password'])) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        document.getElementById('forgotForm')?.addEventListener('submit', function() {
-            const submitBtn = document.getElementById('submitBtn');
-            const spinner = document.querySelector('.loading-spinner');
+        // Bootstrap Form Validation
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                var forms = document.getElementsByClassName('needs-validation');
+                var validation = Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        } else {
+                            // Show loading state
+                            showLoadingState();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+
+        // Real-time email validation
+        document.getElementById('email').addEventListener('input', function() {
+            const email = this.value;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             
-            // Disable button and show loading
-            submitBtn.disabled = true;
-            spinner.style.display = 'inline-block';
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Sending...';
+            if (email.length > 0) {
+                if (emailRegex.test(email)) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else {
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+            } else {
+                this.classList.remove('is-valid', 'is-invalid');
+            }
         });
 
-        // Auto-hide alerts after 5 seconds
+        // Loading state for form submission
+        function showLoadingState() {
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            const submitSpinner = document.getElementById('submitSpinner');
+            
+            submitBtn.disabled = true;
+            submitText.classList.add('d-none');
+            submitSpinner.classList.remove('d-none');
+        }
+
+        // Enhanced form input effects
+        document.querySelectorAll('.form-control').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'translateY(-1px)';
+                this.parentElement.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.15)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'translateY(0)';
+                this.parentElement.style.boxShadow = 'none';
+            });
+        });
+
+        // Auto-focus email field
+        window.addEventListener('load', function() {
+            const emailField = document.getElementById('email');
+            if (emailField && emailField.value === '') {
+                emailField.focus();
+            }
+        });
+
+        // Auto-hide success alerts after 8 seconds
         setTimeout(function() {
-            const alerts = document.querySelectorAll('.alert');
+            const alerts = document.querySelectorAll('.alert-success');
             alerts.forEach(function(alert) {
-                if (alert.classList.contains('alert-success')) {
+                if (!alert.closest('.success-message')) { // Don't hide main success message
                     alert.style.transition = 'opacity 0.5s ease';
                     alert.style.opacity = '0';
                     setTimeout(() => alert.remove(), 500);
                 }
             });
-        }, 5000);
+        }, 8000);
+
+        // Enhanced keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + Enter to submit form
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                document.getElementById('forgotForm')?.dispatchEvent(new Event('submit'));
+            }
+        });
     </script>
 </body>
 </html>

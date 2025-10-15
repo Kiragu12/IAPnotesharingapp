@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NotesShare Academy - Share Knowledge, Build Together</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -353,6 +356,7 @@
     <!-- Features Section -->
     <section class="features-section">
         <div class="container">
+            <!-- Header Row -->
             <div class="row text-center mb-5">
                 <div class="col-lg-8 mx-auto">
                     <h2 class="display-5 fw-bold mb-3">Why Choose NotesShare Academy?</h2>
@@ -360,34 +364,77 @@
                 </div>
             </div>
             
-            <div class="row">
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="bi bi-share"></i>
+            <!-- Features Grid -->
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="card feature-card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-3">
+                                <i class="bi bi-share"></i>
+                            </div>
+                            <h4 class="card-title feature-title">Easy Sharing</h4>
+                            <p class="card-text feature-description">Share your notes instantly with classmates and build a collaborative study environment.</p>
                         </div>
-                        <h4 class="feature-title">Easy Sharing</h4>
-                        <p class="feature-description">Share your notes instantly with classmates and build a collaborative study environment.</p>
                     </div>
                 </div>
                 
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="bi bi-shield-check"></i>
+                <div class="col-lg-4 col-md-6">
+                    <div class="card feature-card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-3">
+                                <i class="bi bi-shield-check"></i>
+                            </div>
+                            <h4 class="card-title feature-title">Secure Platform</h4>
+                            <p class="card-text feature-description">Your academic content is protected with enterprise-grade security and privacy controls.</p>
                         </div>
-                        <h4 class="feature-title">Secure Platform</h4>
-                        <p class="feature-description">Your academic content is protected with enterprise-grade security and privacy controls.</p>
                     </div>
                 </div>
                 
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="bi bi-people"></i>
+                <div class="col-lg-4 col-md-6">
+                    <div class="card feature-card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-3">
+                                <i class="bi bi-people"></i>
+                            </div>
+                            <h4 class="card-title feature-title">Community Driven</h4>
+                            <p class="card-text feature-description">Join a vibrant community of learners who support each other's academic journey.</p>
                         </div>
-                        <h4 class="feature-title">Community Driven</h4>
-                        <p class="feature-description">Join a vibrant community of learners who support each other's academic journey.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="card feature-card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-3">
+                                <i class="bi bi-laptop"></i>
+                            </div>
+                            <h4 class="card-title feature-title">Cross Platform</h4>
+                            <p class="card-text feature-description">Access your notes from any device - desktop, tablet, or mobile. Study anywhere, anytime.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="card feature-card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-3">
+                                <i class="bi bi-search"></i>
+                            </div>
+                            <h4 class="card-title feature-title">Smart Search</h4>
+                            <p class="card-text feature-description">Find exactly what you need with our intelligent search that understands academic content.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="card feature-card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-3">
+                                <i class="bi bi-graph-up"></i>
+                            </div>
+                            <h4 class="card-title feature-title">Track Progress</h4>
+                            <p class="card-text feature-description">Monitor your learning progress and see how your shared notes help others succeed.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -397,29 +444,139 @@
     <!-- Stats Section -->
     <section class="stats-section">
         <div class="container">
-            <div class="row">
-                <div class="col-lg-3 col-md-6">
+            <div class="row text-center">
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="stat-item">
+                        <div class="mb-3">
+                            <i class="bi bi-people-fill" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                        </div>
                         <span class="stat-number">500+</span>
-                        <span class="stat-label">Active Students</span>
+                        <span class="stat-label d-block">Active Students</span>
+                        <div class="progress mt-2" style="height: 4px;">
+                            <div class="progress-bar bg-light" role="progressbar" style="width: 85%"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="stat-item">
+                        <div class="mb-3">
+                            <i class="bi bi-journal-text" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                        </div>
                         <span class="stat-number">2.5k+</span>
-                        <span class="stat-label">Notes Shared</span>
+                        <span class="stat-label d-block">Notes Shared</span>
+                        <div class="progress mt-2" style="height: 4px;">
+                            <div class="progress-bar bg-light" role="progressbar" style="width: 92%"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="stat-item">
+                        <div class="mb-3">
+                            <i class="bi bi-collection" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                        </div>
                         <span class="stat-number">50+</span>
-                        <span class="stat-label">Study Groups</span>
+                        <span class="stat-label d-block">Study Groups</span>
+                        <div class="progress mt-2" style="height: 4px;">
+                            <div class="progress-bar bg-light" role="progressbar" style="width: 70%"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="stat-item">
+                        <div class="mb-3">
+                            <i class="bi bi-trophy" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                        </div>
                         <span class="stat-number">95%</span>
-                        <span class="stat-label">Success Rate</span>
+                        <span class="stat-label d-block">Success Rate</span>
+                        <div class="progress mt-2" style="height: 4px;">
+                            <div class="progress-bar bg-light" role="progressbar" style="width: 95%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="row text-center mb-5">
+                <div class="col-lg-8 mx-auto">
+                    <h2 class="display-6 fw-bold mb-3">What Students Say</h2>
+                    <p class="lead text-muted">Real feedback from our learning community</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <div class="d-flex mb-3">
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                            </div>
+                            <p class="card-text">"NotesShare Academy has completely transformed how I study. The collaboration features are amazing!"</p>
+                            <div class="d-flex align-items-center mt-3">
+                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-person text-white"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <h6 class="mb-0">Sarah Johnson</h6>
+                                    <small class="text-muted">Computer Science Student</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <div class="d-flex mb-3">
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                            </div>
+                            <p class="card-text">"The security features give me confidence to share my work. The 2FA system is excellent!"</p>
+                            <div class="d-flex align-items-center mt-3">
+                                <div class="bg-success rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-person text-white"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <h6 class="mb-0">Mike Chen</h6>
+                                    <small class="text-muted">Engineering Student</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <div class="d-flex mb-3">
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <i class="bi bi-star-fill text-warning"></i>
+                            </div>
+                            <p class="card-text">"Perfect platform for group projects. The interface is intuitive and modern!"</p>
+                            <div class="d-flex align-items-center mt-3">
+                                <div class="bg-info rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-person text-white"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <h6 class="mb-0">Emma Davis</h6>
+                                    <small class="text-muted">Business Student</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

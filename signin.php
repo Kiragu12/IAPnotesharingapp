@@ -104,7 +104,7 @@
         .form-control {
             border: 2px solid #e9ecef;
             border-radius: 15px;
-            padding: 1.2rem 1.2rem 1.2rem 3.5rem;
+            padding: 1rem;
             font-size: 1.1rem;
             transition: all 0.3s ease;
             background: #f8f9fa;
@@ -117,14 +117,55 @@
             background: white;
         }
         
-        .form-icon {
-            position: absolute;
-            left: 1.2rem;
-            top: 50%;
-            transform: translateY(-50%);
+        .form-control.is-valid {
+            border-color: #198754;
+            background: #f8fff9;
+        }
+        
+        .form-control.is-invalid {
+            border-color: #dc3545;
+            background: #fff8f8;
+        }
+        
+        .input-group-text {
+            border: 2px solid #e9ecef;
+            background: #f8f9fa;
             color: #764ba2;
-            font-size: 1.3rem;
-            z-index: 3;
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+        
+        .input-group:focus-within .input-group-text {
+            border-color: #764ba2;
+            background: white;
+        }
+        
+        .input-group:focus-within .form-control {
+            border-color: #764ba2;
+        }
+        
+        .valid-feedback, .invalid-feedback {
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+        
+        .valid-feedback {
+            color: #198754;
+        }
+        
+        .invalid-feedback {
+            color: #dc3545;
+        }
+        
+        .form-check-input:checked {
+            background-color: #764ba2;
+            border-color: #764ba2;
+        }
+        
+        .form-check-input:focus {
+            border-color: #764ba2;
+            box-shadow: 0 0 0 0.2rem rgba(118, 75, 162, 0.25);
         }
         
         .btn-signin {
@@ -357,61 +398,112 @@
                                 <p><?php echo $welcome_subtitle; ?></p>
                             </div>
                             
-                            <form action="" method="post" autocomplete="off">
-                                <div class="form-group">
-                                    <label for="email" class="form-label">
-                                        <i class="bi bi-envelope me-2"></i>Email Address
+                            <form action="" method="post" autocomplete="off" class="needs-validation" novalidate>
+                                <!-- Email Field with Bootstrap Input Group -->
+                                <div class="mb-3">
+                                    <label for="email" class="form-label fw-semibold text-dark">
+                                        <i class="bi bi-envelope me-2 text-primary"></i>Email Address
                                     </label>
-                                    <div class="position-relative">
-                                        <i class="bi bi-envelope form-icon"></i>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0" style="border-radius: 15px 0 0 15px;">
+                                            <i class="bi bi-envelope text-primary"></i>
+                                        </span>
                                         <input type="email" 
-                                               class="form-control" 
+                                               class="form-control border-start-0 <?php echo isset($err['email_error']) ? 'is-invalid' : ''; ?>" 
                                                id="email" 
                                                name="email" 
                                                placeholder="Enter your email address" 
                                                value="<?php echo isset($_SESSION['email']) ? $_SESSION['email'] : ''; ?>" 
+                                               style="border-radius: 0 15px 15px 0; background: #f8f9fa; padding-left: 0.5rem;"
                                                required>
-                                    </div>
-                                    <?php if(isset($err['email_error'])) { ?>
-                                        <div class="alert alert-danger mt-2">
-                                            <i class="bi bi-exclamation-circle me-2"></i><?php echo $err['email_error']; ?>
+                                        <div class="valid-feedback">
+                                            <i class="bi bi-check-circle me-1"></i>Valid email!
                                         </div>
-                                    <?php } ?>
+                                        <?php if(isset($err['email_error'])) { ?>
+                                            <div class="invalid-feedback">
+                                                <i class="bi bi-exclamation-circle me-1"></i><?php echo $err['email_error']; ?>
+                                            </div>
+                                        <?php } ?>
+                                    </div>
                                 </div>
                                 
-                                <div class="form-group">
-                                    <label for="password" class="form-label">
-                                        <i class="bi bi-lock me-2"></i>Password
+                                <!-- Password Field with Bootstrap Input Group and Show/Hide -->
+                                <div class="mb-3">
+                                    <label for="password" class="form-label fw-semibold text-dark">
+                                        <i class="bi bi-lock me-2 text-primary"></i>Password
                                     </label>
-                                    <div class="position-relative">
-                                        <i class="bi bi-lock form-icon"></i>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0" style="border-radius: 15px 0 0 15px;">
+                                            <i class="bi bi-lock text-primary"></i>
+                                        </span>
                                         <input type="password" 
-                                               class="form-control" 
+                                               class="form-control border-start-0 border-end-0 <?php echo isset($err['password_error']) ? 'is-invalid' : ''; ?>" 
                                                id="password" 
                                                name="password" 
                                                placeholder="Enter your password" 
+                                               style="background: #f8f9fa; padding-left: 0.5rem; padding-right: 0.5rem;"
                                                required>
-                                    </div>
-                                    <?php if(isset($err['password_error'])) { ?>
-                                        <div class="alert alert-danger mt-2">
-                                            <i class="bi bi-exclamation-circle me-2"></i><?php echo $err['password_error']; ?>
+                                        <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePassword" style="border-radius: 0 15px 15px 0; background: #f8f9fa;">
+                                            <i class="bi bi-eye" id="eyeIcon"></i>
+                                        </button>
+                                        <div class="valid-feedback">
+                                            <i class="bi bi-check-circle me-1"></i>Password entered!
                                         </div>
-                                    <?php } ?>
-                                </div>
-                                
-                                <div class="remember-forgot">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="remember" name="remember_me">
-                                        <label class="form-check-label" for="remember">
-                                            Remember me for 30 days
-                                        </label>
+                                        <?php if(isset($err['password_error'])) { ?>
+                                            <div class="invalid-feedback">
+                                                <i class="bi bi-exclamation-circle me-1"></i><?php echo $err['password_error']; ?>
+                                            </div>
+                                        <?php } ?>
                                     </div>
-                                    <a href="forgot_password.php" class="forgot-link">Forgot Password?</a>
                                 </div>
                                 
-                                <button type="submit" class="btn btn-signin" name="signin">
-                                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In to Dashboard
-                                </button>
+                                <!-- Remember Me and Forgot Password Row -->
+                                <div class="row align-items-center mb-4">
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="remember" name="remember_me" style="transform: scale(1.1);">
+                                            <label class="form-check-label text-muted" for="remember">
+                                                Remember me for 30 days
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 text-md-end">
+                                        <a href="forgot_password.php" class="text-decoration-none text-primary fw-semibold">
+                                            <i class="bi bi-question-circle me-1"></i>Forgot Password?
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                <!-- Submit Button with Loading State -->
+                                <div class="d-grid mb-3">
+                                    <button type="submit" class="btn btn-signin position-relative" name="signin" id="submitBtn">
+                                        <span id="submitText">
+                                            <i class="bi bi-box-arrow-in-right me-2"></i>Sign In to Dashboard
+                                        </span>
+                                        <span id="submitSpinner" class="d-none">
+                                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                            Signing In...
+                                        </span>
+                                    </button>
+                                </div>
+                                
+                                <!-- Demo Credentials Card -->
+                                <div class="card border-0 bg-light mb-3">
+                                    <div class="card-body py-2 px-3">
+                                        <div class="row align-items-center">
+                                            <div class="col">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-info-circle me-1"></i>Try demo credentials
+                                                </small>
+                                            </div>
+                                            <div class="col-auto">
+                                                <button type="button" class="btn btn-outline-primary btn-sm" id="demoBtn">
+                                                    <i class="bi bi-person-gear me-1"></i>Use Demo
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </form>
                             
                             <div class="signup-link">
@@ -427,37 +519,147 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Add floating label effect
-        document.querySelectorAll('.form-control').forEach(input => {
-            input.addEventListener('focus', function() {
-                this.parentElement.parentElement.classList.add('focused');
-            });
+        // Bootstrap Form Validation
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                var forms = document.getElementsByClassName('needs-validation');
+                var validation = Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        } else {
+                            // Show loading state
+                            showLoadingState();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+        
+        // Password visibility toggle
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eyeIcon');
             
-            input.addEventListener('blur', function() {
-                if (this.value === '') {
-                    this.parentElement.parentElement.classList.remove('focused');
-                }
-            });
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.className = 'bi bi-eye-slash';
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.className = 'bi bi-eye';
+            }
         });
         
-        // Demo credentials helper
-        document.addEventListener('DOMContentLoaded', function() {
+        // Real-time email validation
+        document.getElementById('email').addEventListener('input', function() {
+            const email = this.value;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (email.length > 0) {
+                if (emailRegex.test(email)) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else {
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+            } else {
+                this.classList.remove('is-valid', 'is-invalid');
+            }
+        });
+        
+        // Real-time password validation
+        document.getElementById('password').addEventListener('input', function() {
+            const password = this.value;
+            
+            if (password.length > 0) {
+                if (password.length >= 6) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else {
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+            } else {
+                this.classList.remove('is-valid', 'is-invalid');
+            }
+        });
+        
+        // Demo credentials functionality
+        document.getElementById('demoBtn').addEventListener('click', function() {
             const emailInput = document.getElementById('email');
             const passwordInput = document.getElementById('password');
             
-            // Add demo credentials option
-            const demoBtn = document.createElement('button');
-            demoBtn.type = 'button';
-            demoBtn.className = 'btn btn-outline-secondary btn-sm mt-2';
-            demoBtn.innerHTML = '<i class="bi bi-person-gear me-2"></i>Use Demo Credentials';
-            demoBtn.style.width = '100%';
+            emailInput.value = 'demo@noteshareacademy.com';
+            passwordInput.value = 'demo123';
             
-            demoBtn.addEventListener('click', function() {
-                emailInput.value = 'demo@noteshareacademy.com';
-                passwordInput.value = 'demo123';
+            // Trigger validation
+            emailInput.dispatchEvent(new Event('input'));
+            passwordInput.dispatchEvent(new Event('input'));
+            
+            // Add animation feedback
+            this.innerHTML = '<i class="bi bi-check-circle me-1"></i>Applied!';
+            this.classList.remove('btn-outline-primary');
+            this.classList.add('btn-success');
+            
+            setTimeout(() => {
+                this.innerHTML = '<i class="bi bi-person-gear me-1"></i>Use Demo';
+                this.classList.remove('btn-success');
+                this.classList.add('btn-outline-primary');
+            }, 2000);
+        });
+        
+        // Loading state for form submission
+        function showLoadingState() {
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            const submitSpinner = document.getElementById('submitSpinner');
+            
+            submitBtn.disabled = true;
+            submitText.classList.add('d-none');
+            submitSpinner.classList.remove('d-none');
+        }
+        
+        // Enhanced form input effects
+        document.querySelectorAll('.form-control').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'translateY(-1px)';
+                this.parentElement.style.boxShadow = '0 4px 12px rgba(118, 75, 162, 0.15)';
             });
             
-            document.querySelector('.signin-form form').appendChild(demoBtn);
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'translateY(0)';
+                this.parentElement.style.boxShadow = 'none';
+            });
+        });
+        
+        // Auto-focus first field
+        window.addEventListener('load', function() {
+            const emailField = document.getElementById('email');
+            if (emailField.value === '') {
+                emailField.focus();
+            }
+        });
+        
+        // Remember me tooltip
+        const rememberCheckbox = document.getElementById('remember');
+        rememberCheckbox.setAttribute('title', 'Stay signed in for 30 days on this device');
+        
+        // Enhanced keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + Enter to submit form
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                document.querySelector('form').dispatchEvent(new Event('submit'));
+            }
+            
+            // Alt + D for demo credentials
+            if (e.altKey && e.key === 'd') {
+                e.preventDefault();
+                document.getElementById('demoBtn').click();
+            }
         });
     </script>
 </body>

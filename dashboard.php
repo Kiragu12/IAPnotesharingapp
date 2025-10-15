@@ -270,210 +270,371 @@
                         </div>
                     </div>
 
-                    <!-- Stats Cards -->
-                    <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div class="stats-card text-center">
-                                <div class="stats-icon bg-primary mx-auto">
-                                    <i class="bi bi-journal-text"></i>
+                    <!-- Stats Cards with Enhanced Bootstrap Structure -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-xl-3 col-md-6">
+                            <div class="card stats-card border-0 h-100">
+                                <div class="card-body text-center">
+                                    <div class="stats-icon bg-primary mx-auto mb-3">
+                                        <i class="bi bi-journal-text"></i>
+                                    </div>
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <h3 class="fw-bold text-primary mb-1">24</h3>
+                                            <p class="text-muted mb-0 small">My Notes</p>
+                                        </div>
+                                        <div class="col-auto">
+                                            <div class="text-success">
+                                                <i class="bi bi-arrow-up"></i>
+                                                <small>+12%</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="progress mt-2" style="height: 4px;">
+                                        <div class="progress-bar bg-primary" style="width: 75%"></div>
+                                    </div>
                                 </div>
-                                <h3 class="fw-bold mb-1">24</h3>
-                                <p class="text-muted mb-0">My Notes</p>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="stats-card text-center">
-                                <div class="stats-icon bg-success mx-auto">
-                                    <i class="bi bi-share"></i>
+                        <div class="col-xl-3 col-md-6">
+                            <div class="card stats-card border-0 h-100">
+                                <div class="card-body text-center">
+                                    <div class="stats-icon bg-success mx-auto mb-3">
+                                        <i class="bi bi-share"></i>
+                                    </div>
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <h3 class="fw-bold text-success mb-1">12</h3>
+                                            <p class="text-muted mb-0 small">Shared with Me</p>
+                                        </div>
+                                        <div class="col-auto">
+                                            <div class="text-success">
+                                                <i class="bi bi-arrow-up"></i>
+                                                <small>+8%</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="progress mt-2" style="height: 4px;">
+                                        <div class="progress-bar bg-success" style="width: 60%"></div>
+                                    </div>
                                 </div>
-                                <h3 class="fw-bold mb-1">12</h3>
-                                <p class="text-muted mb-0">Shared with Me</p>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="stats-card text-center">
-                                <div class="stats-icon bg-warning mx-auto">
-                                    <i class="bi bi-heart"></i>
+                        <div class="col-xl-3 col-md-6">
+                            <div class="card stats-card border-0 h-100">
+                                <div class="card-body text-center">
+                                    <div class="stats-icon bg-warning mx-auto mb-3">
+                                        <i class="bi bi-heart"></i>
+                                    </div>
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <h3 class="fw-bold text-warning mb-1">8</h3>
+                                            <p class="text-muted mb-0 small">Favorites</p>
+                                        </div>
+                                        <div class="col-auto">
+                                            <div class="text-danger">
+                                                <i class="bi bi-arrow-down"></i>
+                                                <small>-2%</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="progress mt-2" style="height: 4px;">
+                                        <div class="progress-bar bg-warning" style="width: 40%"></div>
+                                    </div>
                                 </div>
-                                <h3 class="fw-bold mb-1">8</h3>
-                                <p class="text-muted mb-0">Favorites</p>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="stats-card text-center">
-                                <div class="stats-icon bg-info mx-auto">
-                                    <i class="bi bi-people"></i>
+                        <div class="col-xl-3 col-md-6">
+                            <div class="card stats-card border-0 h-100">
+                                <div class="card-body text-center">
+                                    <div class="stats-icon bg-info mx-auto mb-3">
+                                        <i class="bi bi-people"></i>
+                                    </div>
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <h3 class="fw-bold text-info mb-1">156</h3>
+                                            <p class="text-muted mb-0 small">Collaborators</p>
+                                        </div>
+                                        <div class="col-auto">
+                                            <div class="text-success">
+                                                <i class="bi bi-arrow-up"></i>
+                                                <small>+25%</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="progress mt-2" style="height: 4px;">
+                                        <div class="progress-bar bg-info" style="width: 85%"></div>
+                                    </div>
                                 </div>
-                                <h3 class="fw-bold mb-1">156</h3>
-                                <p class="text-muted mb-0">Collaborators</p>
                             </div>
                         </div>
                     </div>
 
                     <div class="row">
-                        <!-- Recent Notes -->
+                        <!-- Recent Notes with Enhanced Bootstrap Cards -->
                         <div class="col-lg-8">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h4 class="fw-bold">Recent Notes</h4>
-                                <button class="btn btn-primary-custom">
-                                    <i class="bi bi-plus-circle me-2"></i>New Note
-                                </button>
-                            </div>
-
-                            <!-- Note Cards -->
-                            <div class="note-card">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <div>
-                                        <h5 class="fw-bold mb-1">Data Structures & Algorithms</h5>
-                                        <span class="category-badge">Computer Science</span>
-                                    </div>
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                            <i class="bi bi-three-dots"></i>
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                                    <h4 class="fw-bold mb-0">
+                                        <i class="bi bi-journal-text me-2 text-primary"></i>Recent Notes
+                                    </h4>
+                                    <div class="btn-group">
+                                        <button class="btn btn-primary-custom btn-sm">
+                                            <i class="bi bi-plus-circle me-1"></i>New Note
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+                                            <span class="visually-hidden">Toggle Dropdown</span>
                                         </button>
                                         <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="#"><i class="bi bi-eye me-2"></i>View</a></li>
-                                            <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Edit</a></li>
-                                            <li><a class="dropdown-item" href="#"><i class="bi bi-share me-2"></i>Share</a></li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                            <li><a class="dropdown-item" href="#"><i class="bi bi-file-text me-2"></i>Text Note</a></li>
+                                            <li><a class="dropdown-item" href="#"><i class="bi bi-upload me-2"></i>Upload File</a></li>
+                                            <li><a class="dropdown-item" href="#"><i class="bi bi-link me-2"></i>From URL</a></li>
                                         </ul>
                                     </div>
                                 </div>
-                                <p class="text-muted mb-3">Comprehensive notes on binary trees, sorting algorithms, and complexity analysis. Includes examples and practice problems.</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">
-                                        <i class="bi bi-clock me-1"></i>Last edited 2 hours ago
-                                    </small>
-                                    <div>
-                                        <span class="badge bg-primary me-2">
-                                            <i class="bi bi-eye me-1"></i>23 views
-                                        </span>
-                                        <span class="badge bg-success">
-                                            <i class="bi bi-heart me-1"></i>5 likes
-                                        </span>
+                                <div class="card-body p-0">
+                                    <!-- Note Card 1 -->
+                                    <div class="note-card border-0 border-bottom">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex align-items-center mb-2">
+                                                        <h5 class="fw-bold mb-0 me-3">Data Structures & Algorithms</h5>
+                                                        <span class="badge category-badge">Computer Science</span>
+                                                    </div>
+                                                    <p class="text-muted mb-0">Comprehensive notes on binary trees, sorting algorithms, and complexity analysis...</p>
+                                                </div>
+                                                <div class="dropdown ms-3">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                        <i class="bi bi-three-dots"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-eye me-2"></i>View</a></li>
+                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-share me-2"></i>Share</a></li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="d-flex align-items-center text-muted">
+                                                    <small class="me-3">
+                                                        <i class="bi bi-clock me-1"></i>2 hours ago
+                                                    </small>
+                                                    <small class="me-3">
+                                                        <i class="bi bi-file-text me-1"></i>5 pages
+                                                    </small>
+                                                </div>
+                                                <div class="d-flex gap-2">
+                                                    <span class="badge bg-primary-subtle text-primary">
+                                                        <i class="bi bi-eye me-1"></i>23 views
+                                                    </span>
+                                                    <span class="badge bg-success-subtle text-success">
+                                                        <i class="bi bi-heart me-1"></i>5 likes
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
 
-                            <div class="note-card">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <div>
-                                        <h5 class="fw-bold mb-1">Database Design Principles</h5>
-                                        <span class="category-badge bg-info">Database</span>
+                                    <!-- Note Card 2 -->
+                                    <div class="note-card border-0 border-bottom">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex align-items-center mb-2">
+                                                        <h5 class="fw-bold mb-0 me-3">Database Design Principles</h5>
+                                                        <span class="badge bg-info text-white">Database</span>
+                                                    </div>
+                                                    <p class="text-muted mb-0">Normalization forms, ER diagrams, and best practices for designing efficient database schemas.</p>
+                                                </div>
+                                                <div class="dropdown ms-3">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                        <i class="bi bi-three-dots"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-eye me-2"></i>View</a></li>
+                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-share me-2"></i>Share</a></li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="d-flex align-items-center text-muted">
+                                                    <small class="me-3">
+                                                        <i class="bi bi-clock me-1"></i>Yesterday
+                                                    </small>
+                                                    <small class="me-3">
+                                                        <i class="bi bi-file-text me-1"></i>8 pages
+                                                    </small>
+                                                </div>
+                                                <div class="d-flex gap-2">
+                                                    <span class="badge bg-primary-subtle text-primary">
+                                                        <i class="bi bi-eye me-1"></i>41 views
+                                                    </span>
+                                                    <span class="badge bg-success-subtle text-success">
+                                                        <i class="bi bi-heart me-1"></i>12 likes
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                            <i class="bi bi-three-dots"></i>
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="#"><i class="bi bi-eye me-2"></i>View</a></li>
-                                            <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Edit</a></li>
-                                            <li><a class="dropdown-item" href="#"><i class="bi bi-share me-2"></i>Share</a></li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <p class="text-muted mb-3">Normalization forms, ER diagrams, and best practices for designing efficient database schemas.</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">
-                                        <i class="bi bi-clock me-1"></i>Last edited yesterday
-                                    </small>
-                                    <div>
-                                        <span class="badge bg-primary me-2">
-                                            <i class="bi bi-eye me-1"></i>41 views
-                                        </span>
-                                        <span class="badge bg-success">
-                                            <i class="bi bi-heart me-1"></i>12 likes
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <div class="note-card">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <div>
-                                        <h5 class="fw-bold mb-1">Web Development Frameworks</h5>
-                                        <span class="category-badge bg-warning">Web Development</span>
-                                    </div>
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                            <i class="bi bi-three-dots"></i>
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="#"><i class="bi bi-eye me-2"></i>View</a></li>
-                                            <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Edit</a></li>
-                                            <li><a class="dropdown-item" href="#"><i class="bi bi-share me-2"></i>Share</a></li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <p class="text-muted mb-3">Comparison of React, Vue, and Angular frameworks. Includes pros, cons, and use cases for each.</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">
-                                        <i class="bi bi-clock me-1"></i>Last edited 3 days ago
-                                    </small>
-                                    <div>
-                                        <span class="badge bg-primary me-2">
-                                            <i class="bi bi-eye me-1"></i>67 views
-                                        </span>
-                                        <span class="badge bg-success">
-                                            <i class="bi bi-heart me-1"></i>18 likes
-                                        </span>
+                                    <!-- Note Card 3 -->
+                                    <div class="note-card border-0">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex align-items-center mb-2">
+                                                        <h5 class="fw-bold mb-0 me-3">Web Development Frameworks</h5>
+                                                        <span class="badge bg-warning text-dark">Web Development</span>
+                                                    </div>
+                                                    <p class="text-muted mb-0">Comparison of React, Vue, and Angular frameworks. Includes pros, cons, and use cases for each.</p>
+                                                </div>
+                                                <div class="dropdown ms-3">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                        <i class="bi bi-three-dots"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-eye me-2"></i>View</a></li>
+                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-share me-2"></i>Share</a></li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="d-flex align-items-center text-muted">
+                                                    <small class="me-3">
+                                                        <i class="bi bi-clock me-1"></i>3 days ago
+                                                    </small>
+                                                    <small class="me-3">
+                                                        <i class="bi bi-file-text me-1"></i>12 pages
+                                                    </small>
+                                                </div>
+                                                <div class="d-flex gap-2">
+                                                    <span class="badge bg-primary-subtle text-primary">
+                                                        <i class="bi bi-eye me-1"></i>67 views
+                                                    </span>
+                                                    <span class="badge bg-success-subtle text-success">
+                                                        <i class="bi bi-heart me-1"></i>18 likes
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Recent Activity -->
+                        <!-- Recent Activity with Enhanced Bootstrap Components -->
                         <div class="col-lg-4">
-                            <div class="recent-activity">
-                                <h5 class="fw-bold mb-3">Recent Activity</h5>
-                                
-                                <div class="activity-item">
-                                    <div class="activity-icon bg-success text-white">
-                                        <i class="bi bi-plus-circle"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-1">New note created</h6>
-                                        <small class="text-muted">Data Structures & Algorithms</small>
-                                        <br><small class="text-muted">2 hours ago</small>
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-white border-0">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <h5 class="fw-bold mb-0">
+                                            <i class="bi bi-activity me-2 text-primary"></i>Recent Activity
+                                        </h5>
+                                        <button class="btn btn-sm btn-outline-secondary">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
                                     </div>
                                 </div>
-                                
-                                <div class="activity-item">
-                                    <div class="activity-icon bg-primary text-white">
-                                        <i class="bi bi-share"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-1">Note shared with you</h6>
-                                        <small class="text-muted">Machine Learning Basics</small>
-                                        <br><small class="text-muted">5 hours ago</small>
+                                <div class="card-body p-0">
+                                    <div class="list-group list-group-flush">
+                                        <div class="list-group-item border-0 py-3">
+                                            <div class="d-flex align-items-start">
+                                                <div class="activity-icon bg-success text-white me-3 flex-shrink-0">
+                                                    <i class="bi bi-plus-circle"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex align-items-center justify-content-between">
+                                                        <h6 class="mb-1 fw-semibold">New note created</h6>
+                                                        <small class="text-muted">2h</small>
+                                                    </div>
+                                                    <p class="mb-1 text-muted small">Data Structures & Algorithms</p>
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="badge bg-success-subtle text-success me-2">
+                                                            <i class="bi bi-file-text me-1"></i>Note
+                                                        </span>
+                                                        <small class="text-muted">by You</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="list-group-item border-0 py-3">
+                                            <div class="d-flex align-items-start">
+                                                <div class="activity-icon bg-primary text-white me-3 flex-shrink-0">
+                                                    <i class="bi bi-share"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex align-items-center justify-content-between">
+                                                        <h6 class="mb-1 fw-semibold">Note shared with you</h6>
+                                                        <small class="text-muted">5h</small>
+                                                    </div>
+                                                    <p class="mb-1 text-muted small">Machine Learning Basics</p>
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="badge bg-primary-subtle text-primary me-2">
+                                                            <i class="bi bi-share me-1"></i>Shared
+                                                        </span>
+                                                        <small class="text-muted">by Sarah Chen</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="list-group-item border-0 py-3">
+                                            <div class="d-flex align-items-start">
+                                                <div class="activity-icon bg-warning text-white me-3 flex-shrink-0">
+                                                    <i class="bi bi-heart"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex align-items-center justify-content-between">
+                                                        <h6 class="mb-1 fw-semibold">Note liked</h6>
+                                                        <small class="text-muted">1d</small>
+                                                    </div>
+                                                    <p class="mb-1 text-muted small">Someone liked "Database Design"</p>
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="badge bg-warning-subtle text-warning me-2">
+                                                            <i class="bi bi-heart me-1"></i>Like
+                                                        </span>
+                                                        <small class="text-muted">by Mike Johnson</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="list-group-item border-0 py-3">
+                                            <div class="d-flex align-items-start">
+                                                <div class="activity-icon bg-info text-white me-3 flex-shrink-0">
+                                                    <i class="bi bi-chat"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex align-items-center justify-content-between">
+                                                        <h6 class="mb-1 fw-semibold">New comment</h6>
+                                                        <small class="text-muted">2d</small>
+                                                    </div>
+                                                    <p class="mb-1 text-muted small">Comment on "Web Frameworks"</p>
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="badge bg-info-subtle text-info me-2">
+                                                            <i class="bi bi-chat me-1"></i>Comment
+                                                        </span>
+                                                        <small class="text-muted">by Alex Rivera</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                
-                                <div class="activity-item">
-                                    <div class="activity-icon bg-warning text-white">
-                                        <i class="bi bi-heart"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-1">Note liked</h6>
-                                        <small class="text-muted">Someone liked "Database Design"</small>
-                                        <br><small class="text-muted">1 day ago</small>
-                                    </div>
-                                </div>
-                                
-                                <div class="activity-item">
-                                    <div class="activity-icon bg-info text-white">
-                                        <i class="bi bi-chat"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-1">New comment</h6>
-                                        <small class="text-muted">Comment on "Web Frameworks"</small>
-                                        <br><small class="text-muted">2 days ago</small>
-                                    </div>
+                                <div class="card-footer bg-white border-0 text-center">
+                                    <a href="#" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-arrow-right me-1"></i>View All Activity
+                                    </a>
                                 </div>
                             </div>
                         </div>

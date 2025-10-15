@@ -402,48 +402,119 @@ $masked_email = substr($user_email, 0, 2) . str_repeat('*', strlen($user_email) 
             </div>
         <?php endif; ?>
 
-        <form method="POST" action="" id="twofaForm">
-            <div class="otp-input-container">
-                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric">
-                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric">
-                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric">
-                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric">
-                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric">
-                <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric">
+        <form method="POST" action="" id="twofaForm" class="needs-validation" novalidate>
+            <!-- OTP Input Section with Bootstrap Enhancement -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold text-dark text-center d-block mb-3">
+                    <i class="bi bi-key me-2 text-primary"></i>Enter 6-Digit Verification Code
+                </label>
+                <div class="row g-2 justify-content-center">
+                    <div class="col-auto">
+                        <input type="text" class="otp-input form-control text-center" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+                    </div>
+                    <div class="col-auto">
+                        <input type="text" class="otp-input form-control text-center" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+                    </div>
+                    <div class="col-auto">
+                        <input type="text" class="otp-input form-control text-center" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+                    </div>
+                    <div class="col-auto">
+                        <input type="text" class="otp-input form-control text-center" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+                    </div>
+                    <div class="col-auto">
+                        <input type="text" class="otp-input form-control text-center" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+                    </div>
+                    <div class="col-auto">
+                        <input type="text" class="otp-input form-control text-center" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+                    </div>
+                </div>
+                <div class="invalid-feedback text-center mt-2" id="otpFeedback">
+                    Please enter all 6 digits of the verification code
+                </div>
             </div>
 
             <input type="hidden" name="otp_code" id="otpCode">
 
+            <!-- Error Display -->
             <?php if (isset($errors['otp_error'])): ?>
                 <div class="alert alert-danger">
                     <i class="bi bi-exclamation-circle me-2"></i><?php echo $errors['otp_error']; ?>
                 </div>
             <?php endif; ?>
 
-            <button type="submit" name="verify_2fa" class="btn btn-verify" id="verifyBtn" disabled>
-                <i class="bi bi-shield-check me-2"></i>Verify & Sign In
-            </button>
+            <!-- Verify Button -->
+            <div class="d-grid mb-3">
+                <button type="submit" name="verify_2fa" class="btn btn-verify position-relative" id="verifyBtn" disabled>
+                    <span id="verifyText">
+                        <i class="bi bi-shield-check me-2"></i>Verify & Sign In
+                    </span>
+                    <span id="verifySpinner" class="d-none">
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        Verifying...
+                    </span>
+                </button>
+            </div>
+
+            <!-- Code Progress Indicator -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="text-muted">Code Entry Progress</small>
+                    <small id="progressText" class="text-muted">0/6</small>
+                </div>
+                <div class="progress" style="height: 4px;">
+                    <div id="progressBar" class="progress-bar bg-primary" style="width: 0%; transition: all 0.3s ease;"></div>
+                </div>
+            </div>
         </form>
 
-        <div class="resend-section">
-            <p class="text-muted mb-2">Didn't receive the code?</p>
-            <form method="POST" action="" style="display: inline-block;">
-                <button type="submit" name="resend_otp" class="btn btn-resend" id="resendBtn">
-                    <i class="bi bi-arrow-clockwise me-2"></i>Resend Code
-                </button>
-            </form>
-            <div class="countdown" id="resendCountdown"></div>
-            <?php if (isset($errors['resend_error'])): ?>
-                <div class="alert alert-danger mt-2">
-                    <i class="bi bi-exclamation-circle me-2"></i><?php echo $errors['resend_error']; ?>
+        <!-- Resend Section with Enhanced Bootstrap Components -->
+        <div class="card border-0 bg-light mb-3">
+            <div class="card-body text-center py-3">
+                <h6 class="mb-2">Didn't receive the code?</h6>
+                <div class="row align-items-center">
+                    <div class="col">
+                        <form method="POST" action="" class="d-inline">
+                            <button type="submit" name="resend_otp" class="btn btn-resend btn-sm" id="resendBtn">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Resend Code
+                            </button>
+                        </form>
+                    </div>
                 </div>
-            <?php endif; ?>
+                <div class="countdown mt-2" id="resendCountdown"></div>
+                <?php if (isset($errors['resend_error'])): ?>
+                    <div class="alert alert-danger mt-2 mb-0">
+                        <i class="bi bi-exclamation-circle me-2"></i><?php echo $errors['resend_error']; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
 
-        <div class="security-notice">
-            <i class="bi bi-info-circle me-2"></i>
-            <strong>Security Notice:</strong> This code expires in 10 minutes. 
-            Never share this code with anyone.
+        <!-- Code Expiry Info -->
+        <div class="alert alert-warning border-0 mb-3">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <i class="bi bi-clock-history fs-4"></i>
+                </div>
+                <div class="col">
+                    <h6 class="mb-1">Code Expiry</h6>
+                    <small>This verification code expires in <strong>10 minutes</strong></small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Notice -->
+        <div class="card border-0 bg-warning-subtle mb-3">
+            <div class="card-body py-3">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <i class="bi bi-shield-exclamation text-warning fs-4"></i>
+                    </div>
+                    <div class="col">
+                        <h6 class="mb-1 text-warning-emphasis">Security Notice</h6>
+                        <small class="text-warning-emphasis">Never share this code with anyone. Our support team will never ask for this code.</small>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="back-link">
