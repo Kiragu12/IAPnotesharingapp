@@ -90,6 +90,7 @@ class auth{
             // Basic sanitization
             $email = isset($_POST['email']) ? strtolower(trim($_POST['email'])) : '';
             $password = isset($_POST['password']) ? $_POST['password'] : '';
+            $remember_me = isset($_POST['remember_me']) ? true : false;
 
             // Basic validation
             if(empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)){
@@ -105,7 +106,7 @@ class auth{
             try{
                 // Use the Database class directly to look up the user
                 $db = new Database($conf);
-                $sql = "SELECT id, email, password FROM users WHERE email = :email LIMIT 1";
+                $sql = "SELECT id, email, password, full_name FROM users WHERE email = :email LIMIT 1";
                 $user = $db->fetchOne($sql, [':email' => $email]);
 
                 if(!$user || !isset($user['password']) || !isset($user['id'])){
@@ -124,6 +125,13 @@ class auth{
                         session_regenerate_id(true);
                     }
                     $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['user_email'] = $user['email'];
+                    $_SESSION['user_name'] = $user['full_name'] ?? 'User';
+
+                    // Handle "Remember Me" functionality
+                    if($remember_me) {
+                        $this->createRememberToken($user['id'], $conf);
+                    }
 
                     // Redirect to dashboard
                     header('Location: dashboard.php');
@@ -139,5 +147,137 @@ class auth{
                 return false;
             }
         }
+    }
+
+    // Create Remember Me token
+    private function createRememberToken($user_id, $conf) {
+        try {
+            // Generate secure random token
+            $token = bin2hex(random_bytes(32));
+            
+            // Get user device info
+            $device_info = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown Device';
+            $ip_address = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+            
+            // Set expiration (30 days from now)
+            $expires_at = date('Y-m-d H:i:s', time() + (30 * 24 * 60 * 60));
+            
+            // Store in database
+            $db = new Database($conf);
+            $sql = "INSERT INTO remember_tokens (user_id, token, expires_at, device_info, ip_address) 
+                    VALUES (:user_id, :token, :expires_at, :device_info, :ip_address)";
+            
+            $params = [
+                ':user_id' => $user_id,
+                ':token' => $token,
+                ':expires_at' => $expires_at,
+                ':device_info' => $device_info,
+                ':ip_address' => $ip_address
+            ];
+            
+            $db->execute($sql, $params);
+            
+            // Set secure cookie (30 days)
+            setcookie(
+                'remember_token', 
+                $token, 
+                time() + (30 * 24 * 60 * 60), // 30 days
+                '/', // Path
+                '', // Domain
+                false, // Secure (set to true for HTTPS)
+                true // HttpOnly
+            );
+            
+            return true;
+            
+        } catch (Exception $e) {
+            error_log('Remember token creation error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Check for existing remember token on page load
+    public function checkRememberToken($conf, $ObjFncs) {
+        // Skip if user is already logged in
+        if (isset($_SESSION['user_id'])) {
+            return true;
+        }
+        
+        // Check for remember token cookie
+        if (!isset($_COOKIE['remember_token'])) {
+            return false;
+        }
+        
+        $token = $_COOKIE['remember_token'];
+        
+        try {
+            $db = new Database($conf);
+            
+            // Find valid token
+            $sql = "SELECT rt.user_id, rt.expires_at, u.email, u.full_name 
+                    FROM remember_tokens rt 
+                    JOIN users u ON rt.user_id = u.id 
+                    WHERE rt.token = :token AND rt.expires_at > NOW() 
+                    LIMIT 1";
+            
+            $result = $db->fetchOne($sql, [':token' => $token]);
+            
+            if ($result) {
+                // Valid token found - auto login user
+                if(session_status() !== PHP_SESSION_ACTIVE){
+                    session_start();
+                }
+                
+                $_SESSION['user_id'] = $result['user_id'];
+                $_SESSION['user_email'] = $result['email'];
+                $_SESSION['user_name'] = $result['full_name'] ?? 'User';
+                $_SESSION['auto_login'] = true; // Flag to show "Welcome back" message
+                
+                // Update token last used time
+                $update_sql = "UPDATE remember_tokens SET created_at = NOW() WHERE token = :token";
+                $db->execute($update_sql, [':token' => $token]);
+                
+                return true;
+            } else {
+                // Invalid or expired token - delete cookie
+                setcookie('remember_token', '', time() - 3600, '/');
+                return false;
+            }
+            
+        } catch (Exception $e) {
+            error_log('Remember token check error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Logout and clear remember tokens
+    public function logout($conf) {
+        if(session_status() !== PHP_SESSION_ACTIVE){
+            session_start();
+        }
+        
+        // Clear remember token if exists
+        if (isset($_COOKIE['remember_token'])) {
+            $token = $_COOKIE['remember_token'];
+            
+            try {
+                $db = new Database($conf);
+                // Delete token from database
+                $sql = "DELETE FROM remember_tokens WHERE token = :token";
+                $db->execute($sql, [':token' => $token]);
+            } catch (Exception $e) {
+                error_log('Token deletion error: ' . $e->getMessage());
+            }
+            
+            // Delete cookie
+            setcookie('remember_token', '', time() - 3600, '/');
+        }
+        
+        // Clear session
+        session_destroy();
+        
+        // Redirect to signin
+        header('Location: signin.php');
+        exit;
     }
 }

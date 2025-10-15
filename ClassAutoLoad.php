@@ -20,6 +20,8 @@ $ObjForm = new Forms();
 $ObjAuth = new auth();
 $ObjFncs = new fncs();
 
+// Check for remember token before processing login
+$ObjAuth->checkRememberToken($conf, $ObjFncs);
 
 // Handle login if signin form submitted
 // Load provider helpers (if present) so get_user_by_email() is available
