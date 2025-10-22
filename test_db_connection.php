@@ -8,7 +8,7 @@
 require_once 'conf.php';
 
 echo "<h2>Database Connection Test</h2>\n";
-echo "<p><strong>Testing connection to Railway MySQL database...</strong></p>\n";
+echo "<p><strong>Testing connection to configured MySQL database...</strong></p>\n";
 
 try {
     // Create PDO connection string with port
@@ -66,9 +66,10 @@ try {
     }
     
     // Test current time
-    $stmt = $pdo->query('SELECT NOW() as current_time');
+    // Alias avoids reserved keyword collision when fetching the value
+    $stmt = $pdo->query('SELECT NOW() AS server_time');
     $time = $stmt->fetch();
-    echo "<p><strong>Database Server Time:</strong> " . $time['current_time'] . "</p>\n";
+    echo "<p><strong>Database Server Time:</strong> " . $time['server_time'] . "</p>\n";
     
 } catch (PDOException $e) {
     echo "<div style='color: red; font-weight: bold;'>❌ ERROR: Connection failed!</div>\n";

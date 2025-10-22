@@ -45,32 +45,64 @@ class auth{
             // If there are errors, display them
             if(!count($errors)){
 
-                // Bind email template variables
-                $email_variables = [
-                    'site_name' => $conf['site_name'],
-                    'fullname' => $fullname,
-                    'activation_code' => $conf['reg_ver_code'] // This should be a real activation code
-                ];
+                try {
+                    // Check if email already exists
+                    $db = new Database($conf);
+                    $sql_check = "SELECT id FROM users WHERE email = :email LIMIT 1";
+                    $existing_user = $db->fetchOne($sql_check, [':email' => $email]);
+                    
+                    if ($existing_user) {
+                        $ObjFncs->setMsg('msg', 'An account with this email already exists. Please sign in instead.', 'danger');
+                        return false;
+                    }
+                    
+                    // Save user to database
+                    $sql_insert = "INSERT INTO users (email, password, full_name, email_verified, is_2fa_enabled, created_at) 
+                                   VALUES (:email, :password, :full_name, 0, 1, NOW())";
+                    $db->execute($sql_insert, [
+                        ':email' => $email,
+                        ':password' => $hashedPassword,
+                        ':full_name' => $fullname
+                    ]);
+                    
+                    // Send welcome email
+                    $email_variables = [
+                        'site_name' => $conf['site_name'],
+                        'fullname' => $fullname,
+                        'email' => $email
+                    ];
 
-                $mailCnt = [
-                    'name_from' => $conf['site_name'],
-                    'mail_from' => $conf['admin_email'],
-                    'name_to' => $fullname,
-                    'mail_to' => $email,
-                    'subject' => $this->bindEmailTemplate($lang["ver_reg_subj"], $email_variables),
-                    'body' => nl2br($this->bindEmailTemplate($lang["ver_reg_body"], $email_variables))
-                ];
+                    $mailCnt = [
+                        'name_from' => $conf['site_name'],
+                        'mail_from' => $conf['admin_email'],
+                        'name_to' => $fullname,
+                        'mail_to' => $email,
+                        'subject' => 'Welcome to ' . $conf['site_name'] . '!',
+                        'body' => $this->buildWelcomeEmail($email_variables)
+                    ];
 
-                $ObjSendMail->Send_Mail($conf, $mailCnt);
+                    $email_sent = $ObjSendMail->Send_Mail($conf, $mailCnt);
 
-                // No errors, proceed with further processing (e.g., save to database)
-                // die($fullname . ' ' . $email . ' ' . $password);
-                $ObjFncs->setMsg('msg', 'Signup successful! Please check your email for activation instructions.', 'success');
+                    if ($email_sent) {
+                        $ObjFncs->setMsg('welcome_msg', 'Account created successfully! 🎉 A welcome email has been sent to ' . $email . '. You can now sign in with your credentials.', 'success');
+                    } else {
+                        $ObjFncs->setMsg('welcome_msg', 'Account created successfully! 🎉 However, there was an issue sending the welcome email. You can still sign in with your credentials.', 'warning');
+                    }
 
-                // Clear session data after successful signup
-                unset($_SESSION['fullname']);
-                unset($_SESSION['email']);
-                unset($_SESSION['password']);
+                    // Clear session data after successful signup
+                    unset($_SESSION['fullname']);
+                    unset($_SESSION['email']);
+                    unset($_SESSION['password']);
+                    
+                    // Redirect to signin page with success message
+                    header('Location: signin.php?signup=success&msg=' . urlencode('Account created successfully! Please check your email for the welcome message.'));
+                    exit();
+                    
+                } catch (Exception $e) {
+                    error_log('Signup error: ' . $e->getMessage());
+                    error_log('Signup error trace: ' . $e->getTraceAsString());
+                    $ObjFncs->setMsg('msg', 'An error occurred during signup: ' . $e->getMessage() . '. Please try again later.', 'danger');
+                }
             } else {
                 // Setting errors
                 $ObjFncs->setMsg('errors', $errors, 'danger');
@@ -83,8 +115,8 @@ class auth{
     }
     }
 
-    // Handle login form submission (DB-backed)
-    public function login($conf, $ObjFncs){
+    // Handle login form submission (DB-backed with 2FA)
+    public function login($conf, $ObjFncs, $ObjSendMail){
         // Expecting POST with name 'signin'
         if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['signin'])){
             // Basic sanitization
@@ -116,7 +148,7 @@ class auth{
 
                 // Verify password against hashed value in DB
                 if(password_verify($password, $user['password'])){
-                    // Successful login: start session and set user id
+                    // Password is correct - generate 2FA code
                     if(session_status() !== PHP_SESSION_ACTIVE){
                         session_start();
                     }
@@ -124,17 +156,51 @@ class auth{
                     if(function_exists('session_regenerate_id')){
                         session_regenerate_id(true);
                     }
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['user_email'] = $user['email'];
-                    $_SESSION['user_name'] = $user['full_name'] ?? 'User';
 
-                    // Handle "Remember Me" functionality
-                    if($remember_me) {
-                        $this->createRememberToken($user['id'], $conf);
+                    // Generate 6-digit OTP code
+                    $otp_code = sprintf("%06d", mt_rand(100000, 999999));
+                    $expires_at = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+
+                    // Insert OTP into two_factor_codes table
+                    $sql_insert = "INSERT INTO two_factor_codes (user_id, code, expires_at, attempts_used, code_type) 
+                                   VALUES (:user_id, :code, :expires_at, 0, 'login')";
+                    $db->execute($sql_insert, [
+                        ':user_id' => $user['id'],
+                        ':code' => $otp_code,
+                        ':expires_at' => $expires_at
+                    ]);
+
+                    // Store temporary user info in session
+                    $_SESSION['temp_user_id'] = $user['id'];
+                    $_SESSION['temp_user_email'] = $user['email'];
+                    $_SESSION['temp_user_name'] = $user['full_name'] ?? 'User';
+                    $_SESSION['temp_remember_me'] = $remember_me;
+
+                    // Send OTP via email
+                    $email_variables = [
+                        'site_name' => $conf['site_name'],
+                        'full_name' => $user['full_name'],
+                        'otp_code' => $otp_code
+                    ];
+
+                    $mailCnt = [
+                        'name_from' => $conf['site_name'],
+                        'mail_from' => $conf['admin_email'],
+                        'name_to' => $user['full_name'],
+                        'mail_to' => $user['email'],
+                        'subject' => 'Two-Factor Authentication Code - ' . $conf['site_name'],
+                        'body' => $this->build2FAEmailTemplate($email_variables)
+                    ];
+
+                    $email_sent = $ObjSendMail->Send_Mail($conf, $mailCnt);
+                    
+                    // Note: We proceed with 2FA even if email fails, user can request resend
+                    if (!$email_sent) {
+                        error_log('2FA email failed to send to: ' . $user['email']);
                     }
 
-                    // Redirect to dashboard
-                    header('Location: dashboard.php');
+                    // Redirect to 2FA verification page
+                    header('Location: two_factor_auth.php');
                     exit;
                 } else {
                     $ObjFncs->setMsg('msg', 'Invalid email or password.', 'danger');
@@ -149,8 +215,93 @@ class auth{
         }
     }
 
+    // Build 2FA email template
+    private function build2FAEmailTemplate($variables) {
+        return "
+        <html>
+        <head>
+            <title>Two-Factor Authentication Code</title>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; }
+                .header { color: #667eea; text-align: center; }
+                .code-box { text-align: center; margin: 30px 0; }
+                .code { background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 10px; letter-spacing: 5px; font-size: 2em; display: inline-block; }
+                .footer { font-size: 12px; color: #888; text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <h2 class='header'>Two-Factor Authentication</h2>
+                <p>Hello " . htmlspecialchars($variables['full_name']) . ",</p>
+                <p>Your verification code for signing in to " . htmlspecialchars($variables['site_name']) . " is:</p>
+                <div class='code-box'>
+                    <div class='code'>" . $variables['otp_code'] . "</div>
+                </div>
+                <p><strong>This code will expire in 10 minutes.</strong></p>
+                <p>If you didn't attempt to sign in, please ignore this email or contact support if you have concerns.</p>
+                <div class='footer'>
+                    <p>" . htmlspecialchars($variables['site_name']) . " - Secure Learning Platform</p>
+                </div>
+            </div>
+        </body>
+        </html>";
+    }
+
+    // Build welcome email template for new signups
+    private function buildWelcomeEmail($variables) {
+        return "
+        <html>
+        <head>
+            <title>Welcome to " . htmlspecialchars($variables['site_name']) . "</title>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background: #f9f9f9; }
+                .header { background: linear-gradient(45deg, #667eea, #764ba2); color: white; text-align: center; padding: 30px; border-radius: 10px 10px 0 0; margin: -20px -20px 20px -20px; }
+                .content { background: white; padding: 30px; border-radius: 10px; }
+                .button { display: inline-block; background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; margin: 20px 0; }
+                .features { background: #f0f0f0; padding: 15px; border-radius: 8px; margin: 20px 0; }
+                .footer { font-size: 12px; color: #888; text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h1 style='margin: 0;'>🎉 Welcome to " . htmlspecialchars($variables['site_name']) . "!</h1>
+                </div>
+                <div class='content'>
+                    <h2>Hello " . htmlspecialchars($variables['fullname']) . "! 👋</h2>
+                    <p>We're excited to have you join our learning community!</p>
+                    <p>Your account has been successfully created with the email: <strong>" . htmlspecialchars($variables['email']) . "</strong></p>
+                    
+                    <div class='features'>
+                        <h3>🚀 Getting Started:</h3>
+                        <ul>
+                            <li><strong>Sign In:</strong> Use your email and password to access your dashboard</li>
+                            <li><strong>2FA Security:</strong> For your security, we'll send a verification code each time you sign in</li>
+                            <li><strong>Share Notes:</strong> Start sharing and collaborating with your classmates</li>
+                            <li><strong>Build Community:</strong> Connect with other learners and grow together</li>
+                        </ul>
+                    </div>
+                    
+                    <p>Ready to get started? Click the button below to sign in:</p>
+                    <div style='text-align: center;'>
+                        <a href='http://localhost/IAPnotesharingapp-1/signin.php' class='button'>Sign In Now</a>
+                    </div>
+                    
+                    <p><strong>Note:</strong> Your account is secured with Two-Factor Authentication (2FA). Each time you sign in, we'll send a verification code to this email address.</p>
+                </div>
+                <div class='footer'>
+                    <p>If you didn't create this account, please ignore this email.</p>
+                    <p>" . htmlspecialchars($variables['site_name']) . " - Secure Learning Platform</p>
+                </div>
+            </div>
+        </body>
+        </html>";
+    }
+
     // Create Remember Me token
-    private function createRememberToken($user_id, $conf) {
+    public function createRememberToken($user_id, $conf) {
         try {
             // Generate secure random token
             $token = bin2hex(random_bytes(32));

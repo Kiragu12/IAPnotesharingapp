@@ -1,3 +1,28 @@
+<?php
+// Start session
+session_start();
+
+// Redirect to dashboard if already logged in (but not from auto-login)
+if (isset($_SESSION['user_id']) && !isset($_SESSION['auto_login'])) {
+    header('Location: dashboard.php');
+    exit();
+}
+
+// Process login BEFORE any HTML output
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
+    require_once 'ClassAutoLoad.php';
+    // This will redirect to two_factor_auth.php if successful
+    $ObjAuth->login($conf, $ObjFncs, $ObjSendMail);
+    // If we're still here, login failed - errors are in session
+}
+
+// Load classes for displaying messages
+require_once 'ClassAutoLoad.php';
+
+// Get any error messages
+$err = $ObjFncs->getMsg('errors') ?: array();
+$msg = $ObjFncs->getMsg('msg') ?: '';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -367,6 +392,36 @@
                             $welcome_message = "Welcome Back";
                             $welcome_subtitle = "Sign in to access your personalized dashboard and shared notes collection.";
                             
+                            // Check for signup success message
+                            if (isset($_GET['signup']) && $_GET['signup'] === 'success') {
+                                $signup_msg = '';
+                                if (isset($_GET['msg'])) {
+                                    $signup_msg = $_GET['msg'];
+                                } else {
+                                    require_once 'ClassAutoLoad.php';
+                                    $signup_msg = $ObjFncs->getMsg('welcome_msg');
+                                }
+                                
+                                if ($signup_msg) {
+                                    echo '<div class="alert alert-success alert-dismissible fade show" role="alert" style="margin-bottom: 20px;">
+                                        <i class="bi bi-check-circle me-2"></i>' . htmlspecialchars($signup_msg) . '
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>';
+                                    $welcome_message = "Account Created Successfully! 🎉";
+                                    $welcome_subtitle = "Your account has been created. Please sign in below to access your dashboard.";
+                                }
+                            }
+                            
+                            // Check for logout success message
+                            if (isset($_GET['logout']) && $_GET['logout'] === 'success') {
+                                $welcome_message = "Logged Out Successfully";
+                                $welcome_subtitle = "You have been securely logged out. Sign in again to continue.";
+                                echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
+                                    <i class="bi bi-check-circle me-2"></i>You have been successfully logged out!
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>';
+                            }
+                            
                             // Check if user was auto-logged in via remember token
                             if (isset($_SESSION['auto_login']) && $_SESSION['auto_login']) {
                                 $user_name = $_SESSION['user_name'] ?? 'User';
@@ -383,13 +438,11 @@
                                 unset($_SESSION['auto_login']); // Clear the flag
                             }
                             
-                            // Only include ClassAutoLoad if we need form processing
-                            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                                require_once 'ClassAutoLoad.php';
-                                $ObjFncs = new fncs();
-                                $err = $ObjFncs->getMsg('errors') ?: array();
-                                $msg = $ObjFncs->getMsg('msg') ?: '';
-                                echo $msg;
+                            // Display any error or success messages
+                            if ($msg) {
+                                echo '<div class="alert alert-dismissible fade show" role="alert">' . $msg . '
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>';
                             }
                             ?>
                             

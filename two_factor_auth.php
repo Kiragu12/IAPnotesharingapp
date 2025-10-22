@@ -18,58 +18,82 @@ if (isset($_POST['verify_2fa'])) {
     }
     
     if (empty($otp_code)) {
-        $ObjFncs->setMsg('errors', 'otp_error', 'Please enter the 6-digit code');
+        $ObjFncs->setMsg('msg', 'Please enter the 6-digit code', 'danger');
     } elseif (!preg_match('/^\d{6}$/', $otp_code)) {
-        $ObjFncs->setMsg('errors', 'otp_error', 'Code must be exactly 6 digits');
+        $ObjFncs->setMsg('msg', 'Code must be exactly 6 digits', 'danger');
     } else {
-        // Verify OTP code
-        $sql = "SELECT id, email, full_name, verification_code, code_expiry 
-                FROM users 
-                WHERE id = ? AND verification_code = ? AND code_expiry > NOW()";
-        $stmt = $ObjDatabase->prepare($sql);
-        $stmt->bind_param("is", $user_id, $otp_code);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result->num_rows > 0) {
-            $user = $result->fetch_assoc();
+        try {
+            $db = new Database($conf);
             
-            // Clear verification code
-            $sql = "UPDATE users SET verification_code = NULL, code_expiry = NULL WHERE id = ?";
-            $stmt = $ObjDatabase->prepare($sql);
-            $stmt->bind_param("i", $user_id);
-            $stmt->execute();
+            // Check for valid OTP code in two_factor_codes table
+            $sql = "SELECT tfc.id as code_id, tfc.attempts_used, tfc.max_attempts, u.id, u.email, u.full_name 
+                    FROM two_factor_codes tfc
+                    JOIN users u ON tfc.user_id = u.id
+                    WHERE tfc.user_id = :user_id 
+                    AND tfc.code = :code 
+                    AND tfc.expires_at > NOW()
+                    AND tfc.used_at IS NULL
+                    ORDER BY tfc.created_at DESC
+                    LIMIT 1";
             
-            // Log user in
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['user_email'] = $user['email'];
-            $_SESSION['user_name'] = $user['full_name'];
-            $_SESSION['login_time'] = time();
+            $result = $db->fetchOne($sql, [
+                ':user_id' => $user_id,
+                ':code' => $otp_code
+            ]);
             
-            // Handle "Remember Me" if it was selected
-            if (isset($_SESSION['temp_remember_me']) && $_SESSION['temp_remember_me']) {
-                $auth = new auth($conf, $ObjDatabase, $ObjFncs, $ObjSendMail);
-                $auth->createRememberToken($user['id']);
+            if ($result) {
+                // Check if too many attempts
+                $max_attempts = $result['max_attempts'] ?? 3;
+                if ($result['attempts_used'] >= $max_attempts) {
+                    $ObjFncs->setMsg('msg', 'Too many failed attempts. Please request a new code.', 'danger');
+                    
+                    // Delete the code
+                    $delete_sql = "DELETE FROM two_factor_codes WHERE id = :code_id";
+                    $db->execute($delete_sql, [':code_id' => $result['code_id']]);
+                } else {
+                    // Valid code - log user in
+                    $_SESSION['user_id'] = $result['id'];
+                    $_SESSION['user_email'] = $result['email'];
+                    $_SESSION['user_name'] = $result['full_name'];
+                    $_SESSION['login_time'] = time();
+                    
+                    // Handle "Remember Me" if it was selected
+                    if (isset($_SESSION['temp_remember_me']) && $_SESSION['temp_remember_me']) {
+                        $auth = new auth();
+                        $auth->createRememberToken($result['id'], $conf);
+                    }
+                    
+                    // Mark the code as used instead of deleting
+                    $mark_used_sql = "UPDATE two_factor_codes SET used_at = NOW() WHERE id = :code_id";
+                    $db->execute($mark_used_sql, [':code_id' => $result['code_id']]);
+                    
+                    // Clean up temporary session data
+                    unset($_SESSION['temp_user_id']);
+                    unset($_SESSION['temp_user_email']);
+                    unset($_SESSION['temp_user_name']);
+                    unset($_SESSION['temp_remember_me']);
+                    
+                    // Set welcome message for dashboard
+                    $ObjFncs->setMsg('msg', '🎉 Login successful! Welcome back to Notes Sharing Academy, ' . $result['full_name'] . '!', 'success');
+                    $_SESSION['first_login'] = true; // Flag for first-time dashboard visit
+                    
+                    header('Location: dashboard.php');
+                    exit();
+                }
+            } else {
+                // Invalid code - increment attempts
+                $update_sql = "UPDATE two_factor_codes 
+                              SET attempts_used = attempts_used + 1 
+                              WHERE user_id = :user_id 
+                              AND expires_at > NOW()
+                              AND used_at IS NULL";
+                $db->execute($update_sql, [':user_id' => $user_id]);
+                
+                $ObjFncs->setMsg('msg', 'Invalid or expired verification code. Please try again.', 'danger');
             }
-            
-            // Clean up temporary session data
-            unset($_SESSION['temp_user_id']);
-            unset($_SESSION['temp_remember_me']);
-            
-            // Log activity
-            $sql = "INSERT INTO activity_log (user_id, action, details, ip_address, user_agent) 
-                    VALUES (?, 'login_2fa', ?, ?, ?)";
-            $stmt = $ObjDatabase->prepare($sql);
-            $details = json_encode(['method' => '2FA verification']);
-            $ip = $_SERVER['REMOTE_ADDR'];
-            $user_agent = $_SERVER['HTTP_USER_AGENT'];
-            $stmt->bind_param("isss", $user['id'], $details, $ip, $user_agent);
-            $stmt->execute();
-            
-            header('Location: dashboard.php');
-            exit();
-        } else {
-            $ObjFncs->setMsg('errors', 'otp_error', 'Invalid or expired verification code');
+        } catch (Exception $e) {
+            error_log('2FA verification error: ' . $e->getMessage());
+            $ObjFncs->setMsg('msg', 'An error occurred during verification. Please try again.', 'danger');
         }
     }
 }
@@ -79,58 +103,96 @@ if (isset($_POST['resend_otp'])) {
     $user_id = $_SESSION['temp_user_id'] ?? 0;
     
     if (!empty($user_id)) {
-        // Get user details
-        $sql = "SELECT email, full_name FROM users WHERE id = ?";
-        $stmt = $ObjDatabase->prepare($sql);
-        $stmt->bind_param("i", $user_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result->num_rows > 0) {
-            $user = $result->fetch_assoc();
+        try {
+            $db = new Database($conf);
             
-            // Generate new OTP
-            $otp_code = sprintf("%06d", mt_rand(100000, 999999));
-            $expiry = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+            // Get user details
+            $sql = "SELECT email, full_name FROM users WHERE id = :user_id";
+            $user = $db->fetchOne($sql, [':user_id' => $user_id]);
             
-            // Update database
-            $sql = "UPDATE users SET verification_code = ?, code_expiry = ? WHERE id = ?";
-            $stmt = $ObjDatabase->prepare($sql);
-            $stmt->bind_param("ssi", $otp_code, $expiry, $user_id);
-            
-            if ($stmt->execute()) {
-                // Send OTP email
-                $subject = "Two-Factor Authentication Code - NotesShare Academy";
-                $message = "
-                <html>
-                <head><title>2FA Verification Code</title></head>
-                <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-                    <div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;'>
-                        <h2 style='color: #667eea; text-align: center;'>Two-Factor Authentication</h2>
-                        <p>Hello " . htmlspecialchars($user['full_name']) . ",</p>
-                        <p>Your verification code for signing in to NotesShare Academy is:</p>
-                        <div style='text-align: center; margin: 30px 0;'>
-                            <h1 style='background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 10px; letter-spacing: 5px; font-size: 2em;'>" . $otp_code . "</h1>
-                        </div>
-                        <p><strong>This code will expire in 10 minutes.</strong></p>
-                        <p>If you didn't attempt to sign in, please ignore this email or contact support if you have concerns.</p>
-                        <hr style='margin: 30px 0; border: none; border-top: 1px solid #eee;'>
-                        <p style='font-size: 12px; color: #888; text-align: center;'>NotesShare Academy - Secure Learning Platform</p>
-                    </div>
-                </body>
-                </html>";
+            if ($user) {
+                // Delete old codes for this user
+                $delete_sql = "DELETE FROM two_factor_codes WHERE user_id = :user_id";
+                $db->execute($delete_sql, [':user_id' => $user_id]);
                 
-                if ($ObjSendMail->send_mail($user['email'], $subject, $message)) {
-                    $ObjFncs->setMsg('msg', 'success', 'New verification code sent to your email');
-                    $_SESSION['otp_resent_time'] = time();
+                // Generate new OTP
+                $otp_code = sprintf("%06d", mt_rand(100000, 999999));
+                $expires_at = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+                
+                // Insert new code
+                $insert_sql = "INSERT INTO two_factor_codes (user_id, code, expires_at, attempts_used, code_type) 
+                               VALUES (:user_id, :code, :expires_at, 0, 'login')";
+                $db->execute($insert_sql, [
+                    ':user_id' => $user_id,
+                    ':code' => $otp_code,
+                    ':expires_at' => $expires_at
+                ]);
+                
+                // Send OTP email
+                $email_variables = [
+                    'site_name' => $conf['site_name'],
+                    'full_name' => $user['full_name'],
+                    'otp_code' => $otp_code
+                ];
+
+                $mailCnt = [
+                    'name_from' => $conf['site_name'],
+                    'mail_from' => $conf['admin_email'],
+                    'name_to' => $user['full_name'],
+                    'mail_to' => $user['email'],
+                    'subject' => 'Two-Factor Authentication Code - ' . $conf['site_name'],
+                    'body' => build2FAEmailTemplate($email_variables, $conf['site_name'])
+                ];
+
+                $email_sent = $ObjSendMail->Send_Mail($conf, $mailCnt);
+                
+                if ($email_sent) {
+                    $ObjFncs->setMsg('msg', 'New verification code sent to your email', 'success');
                 } else {
-                    $ObjFncs->setMsg('errors', 'resend_error', 'Failed to send verification code');
+                    $ObjFncs->setMsg('msg', 'Failed to send verification code. Please try again.', 'danger');
                 }
+                $_SESSION['otp_resent_time'] = time();
             } else {
-                $ObjFncs->setMsg('errors', 'resend_error', 'Failed to generate new code');
+                $ObjFncs->setMsg('msg', 'User not found', 'danger');
             }
+        } catch (Exception $e) {
+            error_log('Resend OTP error: ' . $e->getMessage());
+            $ObjFncs->setMsg('msg', 'Failed to send verification code. Please try again.', 'danger');
         }
     }
+}
+
+// Helper function for building 2FA email template
+function build2FAEmailTemplate($variables, $site_name) {
+    return "
+    <html>
+    <head>
+        <title>Two-Factor Authentication Code</title>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; }
+            .header { color: #667eea; text-align: center; }
+            .code-box { text-align: center; margin: 30px 0; }
+            .code { background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 10px; letter-spacing: 5px; font-size: 2em; display: inline-block; }
+            .footer { font-size: 12px; color: #888; text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
+        </style>
+    </head>
+    <body>
+        <div class='container'>
+            <h2 class='header'>Two-Factor Authentication</h2>
+            <p>Hello " . htmlspecialchars($variables['full_name']) . ",</p>
+            <p>Your verification code for signing in to " . htmlspecialchars($site_name) . " is:</p>
+            <div class='code-box'>
+                <div class='code'>" . $variables['otp_code'] . "</div>
+            </div>
+            <p><strong>This code will expire in 10 minutes.</strong></p>
+            <p>If you didn't attempt to sign in, please ignore this email or contact support if you have concerns.</p>
+            <div class='footer'>
+                <p>" . htmlspecialchars($site_name) . " - Secure Learning Platform</p>
+            </div>
+        </div>
+    </body>
+    </html>";
 }
 
 // Check if user should be here
@@ -140,12 +202,11 @@ if (!isset($_SESSION['temp_user_id'])) {
 }
 
 // Get user email for display
-$sql = "SELECT email FROM users WHERE id = ?";
-$stmt = $ObjDatabase->prepare($sql);
-$stmt->bind_param("i", $_SESSION['temp_user_id']);
-$stmt->execute();
-$result = $stmt->get_result();
-$user_email = $result->num_rows > 0 ? $result->fetch_assoc()['email'] : '';
+$user_email = $_SESSION['temp_user_email'] ?? '';
+if (empty($user_email)) {
+    header('Location: signin.php');
+    exit();
+}
 $masked_email = substr($user_email, 0, 2) . str_repeat('*', strlen($user_email) - 6) . substr($user_email, -4);
 ?>
 

@@ -7,12 +7,17 @@ if (session_status() == PHP_SESSION_NONE) {
 // Load configuration
 require_once 'conf.php';
 
+// Load language file
+$lang = array();
+require_once 'Lang/en.php';
+
 // Load required classes
 require_once 'Global/fncs.php';
 require_once 'Layouts/layouts.php';
 require_once 'Forms/forms.php';
 require_once 'Proc/auth.php';
 require_once 'Global/SendMail.php';
+require_once 'Global/Database.php';
 
 // Initialize objects
 $ObjFncs = new fncs();

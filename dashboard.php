@@ -1,9 +1,30 @@
+<?php
+// Start session (but don't require authentication)
+session_start();
+
+// Load classes for message handling
+require_once 'Global/fncs.php';
+$ObjFncs = new fncs();
+
+// Check if user is logged in, otherwise show as guest
+$is_logged_in = isset($_SESSION['user_id']);
+$user_name = $is_logged_in ? ($_SESSION['user_name'] ?? 'User') : 'Guest';
+$user_email = $is_logged_in ? ($_SESSION['user_email'] ?? '') : 'guest@example.com';
+$user_id = $is_logged_in ? $_SESSION['user_id'] : 0;
+
+// Check for welcome messages (only if logged in)
+$welcome_msg = $is_logged_in ? $ObjFncs->getMsg('msg') : '';
+$first_login = $is_logged_in && isset($_SESSION['first_login']) ? $_SESSION['first_login'] : false;
+if ($first_login) {
+    unset($_SESSION['first_login']); // Clear the flag
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Notes Sharing App - Dashboard</title>
+    <title>Dashboard - NotesShare Academy</title>
     <!-- Bootstrap CSS via CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
     <!-- Bootstrap Icons -->
@@ -188,11 +209,23 @@
                     <i class="bi bi-person"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-question-circle me-2"></i>Help</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="signin.php"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                    <li class="px-3 py-2 border-bottom">
+                        <div class="d-flex flex-column">
+                            <span class="fw-bold"><?php echo htmlspecialchars($user_name); ?></span>
+                            <small class="text-muted"><?php echo htmlspecialchars($user_email); ?></small>
+                        </div>
+                    </li>
+                    <?php if ($is_logged_in): ?>
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-shield-check me-2"></i>Security (2FA)</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-question-circle me-2"></i>Help</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                    <?php else: ?>
+                        <li><a class="dropdown-item text-success" href="signin.php"><i class="bi bi-box-arrow-in-right me-2"></i>Sign In</a></li>
+                        <li><a class="dropdown-item" href="signup.php"><i class="bi bi-person-plus me-2"></i>Sign Up</a></li>
+                    <?php endif; ?>
                 </ul>
             </div>
         </div>
@@ -246,12 +279,32 @@
             <!-- Main Content -->
             <div class="col-md-9 col-lg-10">
                 <div class="content-area">
+                    <!-- Welcome/Success Messages -->
+                    <?php
+                    // Display welcome messages or alerts
+                    if (!empty($welcome_msg)) {
+                        echo '<div class="alert alert-success alert-dismissible fade show" role="alert" style="margin-bottom: 20px;">
+                            <i class="bi bi-check-circle me-2"></i>' . $welcome_msg . '
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>';
+                    }
+                    
+                    // Show first login welcome
+                    if ($first_login) {
+                        echo '<div class="alert alert-info alert-dismissible fade show" role="alert" style="margin-bottom: 20px;">
+                            <i class="bi bi-info-circle me-2"></i><strong>Welcome to Notes Sharing Academy!</strong> 
+                            This is your dashboard where you can manage your notes, collaborate with classmates, and access all platform features.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>';
+                    }
+                    ?>
+                    
                     <!-- Welcome Banner -->
                     <div class="welcome-banner">
                         <div class="row align-items-center">
                             <div class="col-md-8">
-                                <h2 class="fw-bold mb-2">Welcome back, Student! 👋</h2>
-                                <p class="mb-3 opacity-75">Ready to share knowledge and collaborate with your classmates? You have 5 new shared notes waiting for you.</p>
+                                <h2 class="fw-bold mb-2">Welcome back, <?php echo htmlspecialchars($user_name); ?>! 👋</h2>
+                                <p class="mb-3 opacity-75">Ready to share knowledge and collaborate with your classmates? Start exploring notes and contributing to the community.</p>
                                 <div>
                                     <a href="#" class="quick-action-btn">
                                         <i class="bi bi-plus-circle me-2"></i>Create Note

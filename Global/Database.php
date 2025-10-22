@@ -88,6 +88,14 @@ class Database {
     }
     
     /**
+     * Execute a statement (for INSERT, UPDATE, DELETE)
+     */
+    public function execute($sql, $params = []) {
+        $stmt = $this->query($sql, $params);
+        return $stmt->rowCount();
+    }
+    
+    /**
      * Count rows
      */
     public function count($sql, $params = []) {

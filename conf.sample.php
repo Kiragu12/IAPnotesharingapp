@@ -16,13 +16,13 @@ $conf['admin_email'] = 'admin@icsbacademy.com';
 $conf['site_lang'] = 'en';
 require_once __DIR__ . '/Lang/' . $conf['site_lang'] . '.php';
 
-// Database configuration (fill with your DB)
+// Database configuration (fill with your local DB credentials)
 $conf['db_type'] = 'pdo';
-$conf['db_host'] = 'switchback.proxy.rlwy.net';
-$conf['db_port'] = '44505';
+$conf['db_host'] = 'localhost';
+$conf['db_port'] = '3306';
 $conf['db_user'] = 'root';
 $conf['db_pass'] = '<your_db_password>';
-$conf['db_name'] = 'railway';
+$conf['db_name'] = 'noteshare_db';
 
 // Email configuration (fill with your SMTP)
 $conf['mail_type'] = 'smtp'; // 'smtp' or 'mail'

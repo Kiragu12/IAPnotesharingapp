@@ -22,8 +22,13 @@ try {
     $mail->SMTPAuth   = true;                                   //Enable SMTP authentication
     $mail->Username   = $conf['smtp_user'];                     //SMTP username
     $mail->Password   = $conf['smtp_pass'];                     //SMTP password
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;            //Enable implicit TLS encryption
-    $mail->Port       = $conf['smtp_port'];                     //TCP port to connect to; use 587 if you have set `SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS`
+    // Configure encryption based on port
+    if ($conf['smtp_port'] == 465) {
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;        // SSL for port 465
+    } elseif ($conf['smtp_port'] == 587) {
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;     // STARTTLS for port 587
+    }
+    $mail->Port = $conf['smtp_port'];                           // Set the port
 
     //Recipients
     $mail->setFrom($mailCnt['mail_from'], $mailCnt['name_from']);
@@ -35,9 +40,11 @@ try {
     $mail->Body    = $mailCnt['body'];
 
     $mail->send();
-    echo 'Message has been sent';
+    return true; // Return success
 } catch (Exception $e) {
-    echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
+    error_log("Email sending failed: " . $e->getMessage()); // Log detailed error
+    error_log("SMTP Debug Info: " . $mail->ErrorInfo); // Log SMTP debug info
+    return false; // Return failure status
 }
     }
 }

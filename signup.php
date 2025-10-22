@@ -1,3 +1,26 @@
+<?php
+// Start session
+session_start();
+
+// Redirect to dashboard if already logged in
+if (isset($_SESSION['user_id'])) {
+    header('Location: dashboard.php');
+    exit();
+}
+
+// Load required files
+require_once 'ClassAutoLoad.php';
+
+// Process signup if form submitted BEFORE any output
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
+    // This will redirect and exit if successful, so no further code will run
+    $ObjAuth->signup($conf, $ObjFncs, $lang, $ObjSendMail);
+}
+
+// Initialize variables for displaying the form
+$err = $ObjFncs->getMsg('errors') ?: array();
+$msg = $ObjFncs->getMsg('msg') ?: '';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -307,16 +330,8 @@
                         
                         <div class="signup-form">
                             <?php
-                            // Initialize variables to prevent errors
-                            $err = array();
-                            $msg = '';
-                            
-                            // Only include ClassAutoLoad if we need form processing
-                            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                                require_once 'ClassAutoLoad.php';
-                                $ObjFncs = new fncs();
-                                $err = $ObjFncs->getMsg('errors') ?: array();
-                                $msg = $ObjFncs->getMsg('msg') ?: '';
+                            // Display success/error messages
+                            if (!empty($msg)) {
                                 echo $msg;
                             }
                             ?>
