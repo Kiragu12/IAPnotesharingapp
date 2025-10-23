@@ -1,137 +1,397 @@
--- =====================================================
--- NotesShare Academy Database Setup
--- Complete database schema for the notes sharing app
+-- =====================================================-- =====================================================-- =====================================================
+
+-- IAP NOTE SHARING APP - COMPLETE DATABASE SETUP
+
+-- =====================================================-- IAP NOTE SHARING APP - COMPLETE DATABASE SETUP-- NotesShare Academy Database Setup
+
+-- This script creates all required tables for the application
+
+-- Run this on a fresh database to set up everything you need-- =====================================================-- Complete database schema for the notes sharing app
+
 -- =====================================================
 
--- Create the main database (uncomment if needed)
--- CREATE DATABASE noteshare_academy;
--- USE noteshare_academy;
+-- This script creates all required tables for the application-- =====================================================
+
+-- Step 1: Create the database (optional - uncomment if needed)
+
+-- CREATE DATABASE IF NOT EXISTS iap_notesharing;-- Run this on a fresh database to set up everything you need
+
+-- USE iap_notesharing;
+
+-- =====================================================-- Create the main database (uncomment if needed)
 
 -- =====================================================
--- 1. USERS TABLE
--- =====================================================
-CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+
+-- TABLE 1: USERS-- CREATE DATABASE noteshare_academy;
+
+-- Stores user account information
+
+-- =====================================================-- Step 1: Create the database (optional - uncomment if needed)-- USE noteshare_academy;
+
+CREATE TABLE IF NOT EXISTS users (
+
+    id INT AUTO_INCREMENT PRIMARY KEY,-- CREATE DATABASE IF NOT EXISTS iap_notesharing;
+
     email VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
+
+    password VARCHAR(255) NOT NULL,-- USE iap_notesharing;-- =====================================================
+
     full_name VARCHAR(255) NOT NULL,
-    phone VARCHAR(20),
+
+    phone VARCHAR(20),-- 1. USERS TABLE
+
     profile_picture VARCHAR(500),
-    email_verified BOOLEAN DEFAULT FALSE,
-    verification_code VARCHAR(10),
-    code_expiry TIMESTAMP NULL,
-    is_active BOOLEAN DEFAULT TRUE,
+
+    email_verified BOOLEAN DEFAULT FALSE,-- =====================================================-- =====================================================
+
+    is_2fa_enabled BOOLEAN DEFAULT TRUE,
+
+    is_active BOOLEAN DEFAULT TRUE,-- TABLE 1: USERSCREATE TABLE users (
+
     is_admin BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,-- Stores user account information    id INT AUTO_INCREMENT PRIMARY KEY,
+
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
+
+    -- =====================================================    email VARCHAR(255) NOT NULL UNIQUE,
+
     INDEX idx_email (email),
-    INDEX idx_verification (verification_code),
-    INDEX idx_active (is_active)
-);
+
+    INDEX idx_active (is_active)CREATE TABLE IF NOT EXISTS users (    password VARCHAR(255) NOT NULL,
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    id INT AUTO_INCREMENT PRIMARY KEY,    full_name VARCHAR(255) NOT NULL,
 
 -- =====================================================
--- 2. REMEMBER TOKENS TABLE (for "Remember Me" functionality)
--- =====================================================
-CREATE TABLE remember_tokens (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+
+-- TABLE 2: TWO_FACTOR_CODES    email VARCHAR(255) NOT NULL UNIQUE,    phone VARCHAR(20),
+
+-- Stores OTP codes for 2FA authentication
+
+-- =====================================================    password VARCHAR(255) NOT NULL,    profile_picture VARCHAR(500),
+
+CREATE TABLE IF NOT EXISTS two_factor_codes (
+
+    id INT AUTO_INCREMENT PRIMARY KEY,    full_name VARCHAR(255) NOT NULL,    email_verified BOOLEAN DEFAULT FALSE,
+
     user_id INT NOT NULL,
-    token VARCHAR(255) NOT NULL UNIQUE,
+
+    code VARCHAR(10) NOT NULL,    phone VARCHAR(20),    verification_code VARCHAR(10),
+
+    code_type ENUM('login', 'setup', 'password_reset') DEFAULT 'login',
+
+    attempts_used INT DEFAULT 0,    profile_picture VARCHAR(500),    code_expiry TIMESTAMP NULL,
+
+    max_attempts INT DEFAULT 3,
+
+    expires_at TIMESTAMP NOT NULL,    email_verified BOOLEAN DEFAULT FALSE,    is_active BOOLEAN DEFAULT TRUE,
+
+    used_at TIMESTAMP NULL,
+
+    ip_address VARCHAR(45),    is_2fa_enabled BOOLEAN DEFAULT TRUE,    is_admin BOOLEAN DEFAULT FALSE,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+        is_active BOOLEAN DEFAULT TRUE,    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+
+    INDEX idx_user_code (user_id, code),    is_admin BOOLEAN DEFAULT FALSE,    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_expires (expires_at),
+
+    INDEX idx_used (used_at)    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,    
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,    INDEX idx_email (email),
+
+-- =====================================================
+
+-- TABLE 3: REMEMBER_TOKENS        INDEX idx_verification (verification_code),
+
+-- Stores "Remember Me" tokens for persistent login
+
+-- =====================================================    INDEX idx_email (email),    INDEX idx_active (is_active)
+
+CREATE TABLE IF NOT EXISTS remember_tokens (
+
+    id INT AUTO_INCREMENT PRIMARY KEY,    INDEX idx_active (is_active));
+
+    user_id INT NOT NULL,
+
+    token VARCHAR(255) NOT NULL UNIQUE,) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
     expires_at TIMESTAMP NOT NULL,
-    device_info VARCHAR(500),
+
+    device_info VARCHAR(500),-- =====================================================
+
     ip_address VARCHAR(45),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,-- =====================================================-- 2. REMEMBER TOKENS TABLE (for "Remember Me" functionality)
+
     last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
+
+    -- TABLE 2: TWO_FACTOR_CODES-- =====================================================
+
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    INDEX idx_token (token),
+
+    INDEX idx_token (token),-- Stores OTP codes for 2FA authenticationCREATE TABLE remember_tokens (
+
     INDEX idx_user_id (user_id),
-    INDEX idx_expires (expires_at)
-);
+
+    INDEX idx_expires (expires_at)-- =====================================================    id INT AUTO_INCREMENT PRIMARY KEY,
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS two_factor_codes (    user_id INT NOT NULL,
 
 -- =====================================================
--- 3. CATEGORIES TABLE (for organizing notes)
--- =====================================================
-CREATE TABLE categories (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    color VARCHAR(7) DEFAULT '#667eea', -- Hex color code
-    icon VARCHAR(50) DEFAULT 'bi-folder',
-    parent_id INT NULL, -- For subcategories
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE SET NULL,
-    INDEX idx_name (name),
-    INDEX idx_parent (parent_id),
-    INDEX idx_active (is_active)
-);
 
--- =====================================================
--- 4. NOTES TABLE (main content)
--- =====================================================
-CREATE TABLE notes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+-- TABLE 4: PASSWORD_RESETS    id INT AUTO_INCREMENT PRIMARY KEY,    token VARCHAR(255) NOT NULL UNIQUE,
+
+-- Stores password reset tokens
+
+-- =====================================================    user_id INT NOT NULL,    expires_at TIMESTAMP NOT NULL,
+
+CREATE TABLE IF NOT EXISTS password_resets (
+
+    id INT AUTO_INCREMENT PRIMARY KEY,    code VARCHAR(10) NOT NULL,    device_info VARCHAR(500),
+
     user_id INT NOT NULL,
-    category_id INT NULL,
-    title VARCHAR(255) NOT NULL,
-    content LONGTEXT,
-    summary TEXT, -- Short description/excerpt
-    tags VARCHAR(500), -- Comma-separated tags
-    file_path VARCHAR(500), -- If note has attached file
-    file_type VARCHAR(50), -- pdf, docx, image, etc.
-    file_size INT, -- in bytes
-    is_public BOOLEAN DEFAULT FALSE,
-    is_featured BOOLEAN DEFAULT FALSE,
-    view_count INT DEFAULT 0,
-    like_count INT DEFAULT 0,
-    share_count INT DEFAULT 0,
-    status ENUM('draft', 'published', 'archived') DEFAULT 'draft',
+
+    token VARCHAR(255) NOT NULL UNIQUE,    code_type ENUM('login', 'setup', 'password_reset') DEFAULT 'login',    ip_address VARCHAR(45),
+
+    expires_at TIMESTAMP NOT NULL,
+
+    used_at TIMESTAMP NULL,    attempts_used INT DEFAULT 0,    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
+
+        max_attempts INT DEFAULT 3,    last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
-    INDEX idx_user (user_id),
-    INDEX idx_category (category_id),
-    INDEX idx_title (title),
-    INDEX idx_status (status),
-    INDEX idx_public (is_public),
-    INDEX idx_created (created_at),
-    FULLTEXT idx_content (title, content, summary, tags)
-);
+
+    INDEX idx_token (token),    expires_at TIMESTAMP NOT NULL,    
+
+    INDEX idx_user_id (user_id),
+
+    INDEX idx_expires (expires_at)    used_at TIMESTAMP NULL,    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    ip_address VARCHAR(45),    INDEX idx_token (token),
 
 -- =====================================================
--- 5. NOTE SHARES TABLE (who can access which notes)
--- =====================================================
-CREATE TABLE note_shares (
+
+-- VERIFICATION QUERIES    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,    INDEX idx_user_id (user_id),
+
+-- Run these to verify all tables were created correctly
+
+-- =====================================================        INDEX idx_expires (expires_at)
+
+
+
+-- Show all tables    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,);
+
+SHOW TABLES;
+
+    INDEX idx_user_code (user_id, code),
+
+-- Verify users table structure
+
+DESCRIBE users;    INDEX idx_expires (expires_at),-- =====================================================
+
+
+
+-- Verify two_factor_codes table structure    INDEX idx_used (used_at)-- 3. CATEGORIES TABLE (for organizing notes)
+
+DESCRIBE two_factor_codes;
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;-- =====================================================
+
+-- Verify remember_tokens table structure
+
+DESCRIBE remember_tokens;CREATE TABLE categories (
+
+
+
+-- Verify password_resets table structure-- =====================================================    id INT AUTO_INCREMENT PRIMARY KEY,
+
+DESCRIBE password_resets;
+
+-- TABLE 3: REMEMBER_TOKENS    name VARCHAR(255) NOT NULL,
+
+-- Count records in each table
+
+SELECT 'users' as table_name, COUNT(*) as record_count FROM users-- Stores "Remember Me" tokens for persistent login    description TEXT,
+
+UNION ALL
+
+SELECT 'two_factor_codes', COUNT(*) FROM two_factor_codes-- =====================================================    color VARCHAR(7) DEFAULT '#667eea', -- Hex color code
+
+UNION ALL
+
+SELECT 'remember_tokens', COUNT(*) FROM remember_tokensCREATE TABLE IF NOT EXISTS remember_tokens (    icon VARCHAR(50) DEFAULT 'bi-folder',
+
+UNION ALL
+
+SELECT 'password_resets', COUNT(*) FROM password_resets;    id INT AUTO_INCREMENT PRIMARY KEY,    parent_id INT NULL, -- For subcategories
+
+
+
+-- =====================================================    user_id INT NOT NULL,    is_active BOOLEAN DEFAULT TRUE,
+
+-- SUCCESS MESSAGE
+
+-- =====================================================    token VARCHAR(255) NOT NULL UNIQUE,    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+SELECT '✅ Database setup complete! All tables created successfully.' as status;
+
+    expires_at TIMESTAMP NOT NULL,    
+
+    device_info VARCHAR(500),    FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE SET NULL,
+
+    ip_address VARCHAR(45),    INDEX idx_name (name),
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,    INDEX idx_parent (parent_id),
+
+    last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,    INDEX idx_active (is_active)
+
+    );
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+
+    INDEX idx_token (token),-- =====================================================
+
+    INDEX idx_user_id (user_id),-- 4. NOTES TABLE (main content)
+
+    INDEX idx_expires (expires_at)-- =====================================================
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;CREATE TABLE notes (
+
     id INT AUTO_INCREMENT PRIMARY KEY,
-    note_id INT NOT NULL,
-    shared_with_user_id INT NULL, -- Specific user (NULL = public)
-    shared_by_user_id INT NOT NULL,
-    permission ENUM('view', 'edit', 'admin') DEFAULT 'view',
-    expires_at TIMESTAMP NULL, -- Optional expiration
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+-- =====================================================    user_id INT NOT NULL,
+
+-- TABLE 4: PASSWORD_RESETS    category_id INT NULL,
+
+-- Stores password reset tokens    title VARCHAR(255) NOT NULL,
+
+-- =====================================================    content LONGTEXT,
+
+CREATE TABLE IF NOT EXISTS password_resets (    summary TEXT, -- Short description/excerpt
+
+    id INT AUTO_INCREMENT PRIMARY KEY,    tags VARCHAR(500), -- Comma-separated tags
+
+    user_id INT NOT NULL,    file_path VARCHAR(500), -- If note has attached file
+
+    token VARCHAR(255) NOT NULL UNIQUE,    file_type VARCHAR(50), -- pdf, docx, image, etc.
+
+    expires_at TIMESTAMP NOT NULL,    file_size INT, -- in bytes
+
+    used_at TIMESTAMP NULL,    is_public BOOLEAN DEFAULT FALSE,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,    is_featured BOOLEAN DEFAULT FALSE,
+
+        view_count INT DEFAULT 0,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,    like_count INT DEFAULT 0,
+
+    INDEX idx_token (token),    share_count INT DEFAULT 0,
+
+    INDEX idx_user_id (user_id),    status ENUM('draft', 'published', 'archived') DEFAULT 'draft',
+
+    INDEX idx_expires (expires_at)    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
     
+
+-- =====================================================    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+
+-- OPTIONAL: Sample Admin User    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+
+-- Default password: Admin@123 (change this immediately!)    INDEX idx_user (user_id),
+
+-- =====================================================    INDEX idx_category (category_id),
+
+-- Uncomment the line below to create a default admin account    INDEX idx_title (title),
+
+-- INSERT INTO users (email, password, full_name, email_verified, is_admin)     INDEX idx_status (status),
+
+-- VALUES ('admin@iapnotes.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin User', TRUE, TRUE);    INDEX idx_public (is_public),
+
+    INDEX idx_created (created_at),
+
+-- =====================================================    FULLTEXT idx_content (title, content, summary, tags)
+
+-- VERIFICATION QUERIES);
+
+-- Run these to verify all tables were created correctly
+
+-- =====================================================-- =====================================================
+
+-- 5. NOTE SHARES TABLE (who can access which notes)
+
+-- Show all tables-- =====================================================
+
+SHOW TABLES;CREATE TABLE note_shares (
+
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+-- Verify users table structure    note_id INT NOT NULL,
+
+DESCRIBE users;    shared_with_user_id INT NULL, -- Specific user (NULL = public)
+
+    shared_by_user_id INT NOT NULL,
+
+-- Verify two_factor_codes table structure    permission ENUM('view', 'edit', 'admin') DEFAULT 'view',
+
+DESCRIBE two_factor_codes;    expires_at TIMESTAMP NULL, -- Optional expiration
+
+    is_active BOOLEAN DEFAULT TRUE,
+
+-- Verify remember_tokens table structure    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+DESCRIBE remember_tokens;    
+
     FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE,
-    FOREIGN KEY (shared_with_user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (shared_by_user_id) REFERENCES users(id) ON DELETE CASCADE,
+
+-- Verify password_resets table structure    FOREIGN KEY (shared_with_user_id) REFERENCES users(id) ON DELETE CASCADE,
+
+DESCRIBE password_resets;    FOREIGN KEY (shared_by_user_id) REFERENCES users(id) ON DELETE CASCADE,
+
     INDEX idx_note (note_id),
-    INDEX idx_shared_with (shared_with_user_id),
-    INDEX idx_shared_by (shared_by_user_id),
-    INDEX idx_active (is_active),
-    UNIQUE KEY unique_share (note_id, shared_with_user_id)
-);
+
+-- Count records in each table    INDEX idx_shared_with (shared_with_user_id),
+
+SELECT 'users' as table_name, COUNT(*) as record_count FROM users    INDEX idx_shared_by (shared_by_user_id),
+
+UNION ALL    INDEX idx_active (is_active),
+
+SELECT 'two_factor_codes', COUNT(*) FROM two_factor_codes    UNIQUE KEY unique_share (note_id, shared_with_user_id)
+
+UNION ALL);
+
+SELECT 'remember_tokens', COUNT(*) FROM remember_tokens
+
+UNION ALL-- =====================================================
+
+SELECT 'password_resets', COUNT(*) FROM password_resets;-- 6. NOTE LIKES TABLE (user interactions)
 
 -- =====================================================
--- 6. NOTE LIKES TABLE (user interactions)
--- =====================================================
-CREATE TABLE note_likes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    note_id INT NOT NULL,
-    user_id INT NOT NULL,
+
+-- =====================================================CREATE TABLE note_likes (
+
+-- SUCCESS MESSAGE    id INT AUTO_INCREMENT PRIMARY KEY,
+
+-- =====================================================    note_id INT NOT NULL,
+
+SELECT '✅ Database setup complete! All tables created successfully.' as status;    user_id INT NOT NULL,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE,

@@ -148,7 +148,7 @@ class auth{
 
                 // Verify password against hashed value in DB
                 if(password_verify($password, $user['password'])){
-                    // Password is correct - generate 2FA code
+                    // Password is correct - move to 2FA verification step
                     if(session_status() !== PHP_SESSION_ACTIVE){
                         session_start();
                     }
@@ -157,46 +157,19 @@ class auth{
                         session_regenerate_id(true);
                     }
 
-                    // Generate 6-digit OTP code
-                    $otp_code = sprintf("%06d", mt_rand(100000, 999999));
-                    $expires_at = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+                    // Generate OTP, persist it, and send notification
+                    $otpDetails = $this->prepareOtpForUser($db, $user, $conf, $ObjSendMail);
 
-                    // Insert OTP into two_factor_codes table
-                    $sql_insert = "INSERT INTO two_factor_codes (user_id, code, expires_at, attempts_used, code_type) 
-                                   VALUES (:user_id, :code, :expires_at, 0, 'login')";
-                    $db->execute($sql_insert, [
-                        ':user_id' => $user['id'],
-                        ':code' => $otp_code,
-                        ':expires_at' => $expires_at
-                    ]);
-
-                    // Store temporary user info in session
+                    // Store temporary user info in session for the 2FA page
                     $_SESSION['temp_user_id'] = $user['id'];
                     $_SESSION['temp_user_email'] = $user['email'];
                     $_SESSION['temp_user_name'] = $user['full_name'] ?? 'User';
                     $_SESSION['temp_remember_me'] = $remember_me;
 
-                    // Send OTP via email
-                    $email_variables = [
-                        'site_name' => $conf['site_name'],
-                        'full_name' => $user['full_name'],
-                        'otp_code' => $otp_code
-                    ];
-
-                    $mailCnt = [
-                        'name_from' => $conf['site_name'],
-                        'mail_from' => $conf['admin_email'],
-                        'name_to' => $user['full_name'],
-                        'mail_to' => $user['email'],
-                        'subject' => 'Two-Factor Authentication Code - ' . $conf['site_name'],
-                        'body' => $this->build2FAEmailTemplate($email_variables)
-                    ];
-
-                    $email_sent = $ObjSendMail->Send_Mail($conf, $mailCnt);
-                    
-                    // Note: We proceed with 2FA even if email fails, user can request resend
-                    if (!$email_sent) {
-                        error_log('2FA email failed to send to: ' . $user['email']);
+                    if ($otpDetails['email_sent']) {
+                        $ObjFncs->setMsg('msg', 'We just sent a 6-digit verification code to ' . $user['email'] . '.', 'success');
+                    } else {
+                        $ObjFncs->setMsg('msg', 'We generated your verification code but could not send the email. You can use the code shown on this page or request a resend.', 'warning');
                     }
 
                     // Redirect to 2FA verification page
@@ -213,6 +186,90 @@ class auth{
                 return false;
             }
         }
+    }
+
+    public function regenerateOtpForUser($user_id, $conf, $ObjSendMail) {
+        try {
+            $db = new Database($conf);
+            $sql = "SELECT id, email, full_name FROM users WHERE id = :id LIMIT 1";
+            $user = $db->fetchOne($sql, [':id' => $user_id]);
+
+            if (!$user) {
+                return ['success' => false, 'message' => 'User not found.'];
+            }
+
+            $details = $this->prepareOtpForUser($db, $user, $conf, $ObjSendMail);
+            return [
+                'success' => true,
+                'email_sent' => $details['email_sent'],
+                'code' => $details['code'],
+                'expires_at' => $details['expires_at']
+            ];
+        } catch (Exception $e) {
+            error_log('Regenerate OTP error: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Unable to generate verification code.'];
+        }
+    }
+
+    private function prepareOtpForUser($db, $user, $conf, $ObjSendMail) {
+        $db->execute("DELETE FROM two_factor_codes WHERE user_id = :user_id", [':user_id' => $user['id']]);
+
+        $otp_code = sprintf("%06d", mt_rand(100000, 999999));
+        $expiryMinutes = isset($conf['ver_code_expiry']) ? (int)$conf['ver_code_expiry'] : 10;
+        if ($expiryMinutes <= 0) {
+            $expiryMinutes = 10;
+            }
+            $expiryMinutes = max(1, (int)$expiryMinutes);
+
+            // Persist OTP using database time to avoid timezone drift
+        $insert_sql = "INSERT INTO two_factor_codes (user_id, code, expires_at, attempts_used, code_type, created_at) 
+                   VALUES (:user_id, :code, DATE_ADD(NOW(), INTERVAL {$expiryMinutes} MINUTE), 0, 'login', NOW())";
+            $db->execute($insert_sql, [
+                ':user_id' => $user['id'],
+                ':code' => $otp_code
+            ]);
+
+            // Retrieve the actual expiration timestamp from DB for consistency
+            $latest_code = $db->fetchOne(
+                "SELECT expires_at FROM two_factor_codes WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 1",
+                [':user_id' => $user['id']]
+            );
+            $expires_at = $latest_code['expires_at'] ?? date('Y-m-d H:i:s', time() + ($expiryMinutes * 60));
+
+        $email_variables = [
+            'site_name' => $conf['site_name'],
+            'full_name' => $user['full_name'] ?? 'User',
+            'otp_code' => $otp_code
+        ];
+
+        $mailCnt = [
+            'name_from' => $conf['site_name'],
+            'mail_from' => $conf['admin_email'],
+            'name_to' => $user['full_name'] ?? 'User',
+            'mail_to' => $user['email'],
+            'subject' => 'Two-Factor Authentication Code - ' . $conf['site_name'],
+            'body' => $this->build2FAEmailTemplate($email_variables)
+        ];
+
+        $email_sent = $ObjSendMail->Send_Mail($conf, $mailCnt);
+
+        $_SESSION['otp_debug'] = [
+            'code' => $otp_code,
+            'expires_at' => $expires_at,
+            'email' => $user['email'],
+            'sent' => $email_sent,
+            'sent_at' => date('Y-m-d H:i:s')
+        ];
+
+        if (!$email_sent) {
+            error_log('2FA email failed to send to: ' . $user['email']);
+        }
+
+        return [
+            'code' => $otp_code,
+            'expires_at' => $expires_at,
+            'email_sent' => $email_sent
+        ];
     }
 
     // Build 2FA email template
