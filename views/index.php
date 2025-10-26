@@ -3,16 +3,22 @@
 session_start();
 
 // Load required files for message handling
-require_once 'ClassAutoLoad.php';
-
-// Redirect to dashboard if already logged in
-if (isset($_SESSION['user_id'])) {
-    header('Location: dashboard.php');
-    exit();
+try {
+    require_once '../config/ClassAutoLoad.php';
+    
+    // Redirect to dashboard if already logged in
+    if (isset($_SESSION['user_id'])) {
+        header('Location: dashboard.php');
+        exit();
+    }
+    
+    // Get any signup success messages
+    $signup_message = $ObjFncs->getMsg('signup_success') ?: '';
+} catch (Exception $e) {
+    // If there's an error loading dependencies, continue without messages
+    $signup_message = '';
+    error_log("Index.php error loading dependencies: " . $e->getMessage());
 }
-
-// Get any signup success messages
-$signup_message = $ObjFncs->getMsg('signup_success') ?: '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -328,16 +334,16 @@ $signup_message = $ObjFncs->getMsg('signup_success') ?: '';
                         <a class="nav-link" href="index.php">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="dashboard.php">Features</a>
+                        <a class="nav-link" href="#features">Features</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="active_pages.php">Pages</a>
+                        <a class="nav-link" href="#about">About</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="signin.php">Sign In</a>
+                        <a class="nav-link" href="auth/signin.php">Sign In</a>
                     </li>
                 </ul>
-                <a href="signup.php" class="btn btn-nav">Get Started</a>
+                <a href="auth/signup.php" class="btn btn-nav">Get Started</a>
             </div>
         </div>
     </nav>
@@ -371,18 +377,18 @@ $signup_message = $ObjFncs->getMsg('signup_success') ?: '';
                         <p class="hero-subtitle">Connect with fellow students, share your notes, and create a collaborative learning community that grows together.</p>
                         <div class="hero-buttons">
                             <?php if (!empty($signup_message)): ?>
-                                <a href="signin.php" class="btn btn-primary-hero">
+                                <a href="auth/signin.php" class="btn btn-primary-hero">
                                     <i class="bi bi-box-arrow-in-right me-2"></i>Sign In Now
                                 </a>
-                                <a href="dashboard.php" class="btn btn-outline-hero">
-                                    <i class="bi bi-eye me-2"></i>View Demo
+                                <a href="auth/dashboard-preview.php" class="btn btn-outline-hero">
+                                    <i class="bi bi-eye me-2"></i>View Dashboard
                                 </a>
                             <?php else: ?>
-                                <a href="signup.php" class="btn btn-primary-hero">
+                                <a href="auth/signup.php" class="btn btn-primary-hero">
                                     <i class="bi bi-rocket-takeoff me-2"></i>Start Sharing
                                 </a>
-                                <a href="dashboard.php" class="btn btn-outline-hero">
-                                    <i class="bi bi-eye me-2"></i>View Demo
+                                <a href="auth/dashboard-preview.php" class="btn btn-outline-hero">
+                                    <i class="bi bi-eye me-2"></i>View Dashboard
                                 </a>
                             <?php endif; ?>
                         </div>
@@ -635,10 +641,10 @@ $signup_message = $ObjFncs->getMsg('signup_success') ?: '';
                     <h2 class="cta-title">Ready to Transform Your Learning?</h2>
                     <p class="cta-subtitle">Join thousands of students who are already sharing knowledge and achieving better results together.</p>
                     <div class="hero-buttons">
-                        <a href="signup.php" class="btn btn-primary-hero" style="color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <a href="auth/signup.php" class="btn btn-primary-hero" style="color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                             <i class="bi bi-person-plus me-2"></i>Create Account
                         </a>
-                        <a href="signin.php" class="btn btn-outline-hero" style="color: #667eea; border-color: #667eea;">
+                        <a href="auth/signin.php" class="btn btn-outline-hero" style="color: #667eea; border-color: #667eea;">
                             <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
                         </a>
                     </div>
@@ -658,9 +664,9 @@ $signup_message = $ObjFncs->getMsg('signup_success') ?: '';
                 <div class="col-lg-2 mb-4">
                     <h5>Platform</h5>
                     <ul class="list-unstyled">
-                        <li><a href="signup.php">Sign Up</a></li>
-                        <li><a href="signin.php">Sign In</a></li>
-                        <li><a href="dashboard.php">Dashboard</a></li>
+                        <li><a href="auth/signup.php">Sign Up</a></li>
+                        <li><a href="auth/signin.php">Sign In</a></li>
+                        <li><a href="auth/dashboard-preview.php">Dashboard Preview</a></li>
                     </ul>
                 </div>
                 <div class="col-lg-2 mb-4">

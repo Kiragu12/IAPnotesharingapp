@@ -11,7 +11,7 @@ class auth{
 
     public function signup($conf, $ObjFncs, $lang, $ObjSendMail){
         // Debug output to custom log file
-        $debug_log = dirname(__DIR__) . '/debug.log';
+        $debug_log = dirname(__DIR__, 3) . '/debug.log';
         error_log("DEBUG: Signup function called - " . date('Y-m-d H:i:s'), 3, $debug_log);
         
         if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['signup'])){
@@ -124,7 +124,7 @@ class auth{
                         error_log("DEBUG: About to redirect to index.php", 3, $debug_log);
                         
                         // Redirect to home page
-                        header('Location: index.php');
+                        header('Location: ../../views/index.php');
                         exit();
                     } else {
                         $ObjFncs->setMsg('msg', 'Failed to create account. Please try again.', 'danger');
@@ -149,6 +149,9 @@ class auth{
 
     // Handle login form submission (DB-backed with 2FA)
     public function login($conf, $ObjFncs, $ObjSendMail){
+        $debug_log = __DIR__ . '/../../../debug.log';
+        error_log("DEBUG: Login function started - " . date('Y-m-d H:i:s'), 3, $debug_log);
+        
         // Expecting POST with name 'signin'
         if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['signin'])){
             // Basic sanitization
@@ -169,17 +172,22 @@ class auth{
 
             try{
                 // Use the Database class directly to look up the user
+                error_log("DEBUG: Starting database lookup for email: " . $email, 3, $debug_log);
                 $db = new Database($conf);
                 $sql = "SELECT id, email, password, full_name FROM users WHERE email = :email LIMIT 1";
                 $user = $db->fetchOne($sql, [':email' => $email]);
 
+                error_log("DEBUG: Database query completed. User found: " . ($user ? 'YES' : 'NO'), 3, $debug_log);
+
                 if(!$user || !isset($user['password']) || !isset($user['id'])){
+                    error_log("DEBUG: User not found or missing data", 3, $debug_log);
                     $ObjFncs->setMsg('msg', 'Invalid email or password.', 'danger');
                     return false;
                 }
 
                 // Verify password against hashed value in DB
                 if(password_verify($password, $user['password'])){
+                    error_log("DEBUG: Password verification successful", 3, $debug_log);
                     // Password is correct - generate 2FA code
                     if(session_status() !== PHP_SESSION_ACTIVE){
                         session_start();
@@ -237,13 +245,23 @@ class auth{
                         </div>"
                     ];
 
-                    $email_sent = $ObjSendMail->Send_Mail($conf, $mailCnt);
+                    error_log("DEBUG: About to send OTP email to " . $user['email'], 3, $debug_log);
+                    
+                    try {
+                        $email_sent = $ObjSendMail->Send_Mail($conf, $mailCnt);
+                        error_log("DEBUG: Email send result: " . ($email_sent ? 'SUCCESS' : 'FAILED'), 3, $debug_log);
+                    } catch (Exception $e) {
+                        error_log("DEBUG: Exception during email sending: " . $e->getMessage(), 3, $debug_log);
+                        $email_sent = false;
+                    }
 
                     if ($email_sent) {
+                        error_log("DEBUG: Email sent successfully, redirecting to 2FA page", 3, $debug_log);
                         // Redirect to 2FA verification page
-                        header('Location: two_factor_auth_new.php');
+                        header('Location: ../../views/auth/two_factor_auth_new.php');
                         exit();
                     } else {
+                        error_log("DEBUG: Email sending failed, showing error message", 3, $debug_log);
                         $ObjFncs->setMsg('msg', 'Failed to send verification code. Please try again.', 'danger');
                     }
                 } else {
@@ -531,6 +549,9 @@ class auth{
 
     // Logout and clear remember tokens
     public function logout($conf) {
+        $debug_log = __DIR__ . '/../../../debug.log';
+        error_log("DEBUG: Logout function called - " . date('Y-m-d H:i:s'), 3, $debug_log);
+        
         if(session_status() !== PHP_SESSION_ACTIVE){
             session_start();
         }
@@ -538,25 +559,37 @@ class auth{
         // Clear remember token if exists
         if (isset($_COOKIE['remember_token'])) {
             $token = $_COOKIE['remember_token'];
+            error_log("DEBUG: Clearing remember token", 3, $debug_log);
             
             try {
                 $db = new Database($conf);
                 // Delete token from database
                 $sql = "DELETE FROM remember_tokens WHERE token = :token";
                 $db->execute($sql, [':token' => $token]);
+                error_log("DEBUG: Remember token deleted from database", 3, $debug_log);
             } catch (Exception $e) {
-                error_log('Token deletion error: ' . $e->getMessage());
+                error_log('Token deletion error: ' . $e->getMessage(), 3, $debug_log);
             }
             
             // Delete cookie
             setcookie('remember_token', '', time() - 3600, '/');
+            error_log("DEBUG: Remember token cookie cleared", 3, $debug_log);
         }
         
         // Clear session
+        error_log("DEBUG: Clearing session data", 3, $debug_log);
         session_destroy();
         
-        // Redirect to signin
-        header('Location: signin.php');
+        // Redirect to signin (adjust path based on where logout is called from)
+        error_log("DEBUG: Redirecting to signin page", 3, $debug_log);
+        
+        // Check if we're being called from views/logout.php or elsewhere
+        $redirect_path = 'auth/signin.php'; // Default for views/logout.php
+        if (strpos($_SERVER['REQUEST_URI'], '/views/') === false) {
+            $redirect_path = '../../views/auth/signin.php'; // For other locations
+        }
+        
+        header('Location: ' . $redirect_path);
         exit;
     }
 

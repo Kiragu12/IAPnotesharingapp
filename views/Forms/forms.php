@@ -22,7 +22,7 @@ class forms{
     <input type="password" class="form-control" id="password" placeholder="Enter your password" name="password" value="<?php echo isset($_SESSION['password']) ? $_SESSION['password'] : ''; ?>" required>
     <?php if(isset($err['password_error'])) { ?><div id="passwordHelp" class="alert alert-danger" role="alert"><?php echo $err['password_error']; ?></div><?php } ?>
   </div>
-      <?php $this->submit_button('Sign Up', 'signup'); ?> <a href='signin.php'>Already have an account? Login</a>
+      <?php $this->submit_button('Sign Up', 'signup'); ?> <a href='../auth/signin.php'>Already have an account? Login</a>
 </form>
 
 <?php
@@ -55,7 +55,7 @@ class forms{
     </div>
     <a href="forgot_password.php" class="text-decoration-none">Forgot Password?</a>
   </div>
-    <?php $this->submit_button('Sign In', 'signin'); ?> <a href='signup.php'>Don't have an account? Sign Up</a>
+    <?php $this->submit_button('Sign In', 'signin'); ?> <a href='../auth/signup.php'>Don't have an account? Sign Up</a>
 </form>
 <?php
     }

@@ -9,10 +9,10 @@ if (!isset($_SESSION['temp_user_id'])) {
 }
 
 // Load required files
-require_once 'ClassAutoLoad.php';
+require_once '../../config/ClassAutoLoad.php';
 
 // Debug logging for 2FA page
-$debug_log = __DIR__ . '/debug.log';
+$debug_log = __DIR__ . '/../../debug.log';
 error_log("DEBUG: two_factor_auth_new.php accessed - Method: " . ($_SERVER['REQUEST_METHOD'] ?? 'NOT SET') . " - " . date('Y-m-d H:i:s'), 3, $debug_log);
 
 if (!empty($_POST)) {
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_2fa'])) {
         if ($result) {
             error_log("DEBUG: 2FA verification successful, redirecting to dashboard", 3, $debug_log);
             // Success - redirect to dashboard
-            header('Location: dashboard.php');
+            header('Location: ../dashboard.php');
             exit();
         } else {
             error_log("DEBUG: 2FA verification failed", 3, $debug_log);

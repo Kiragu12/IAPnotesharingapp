@@ -5,12 +5,12 @@
  */
 
 session_start();
-require_once 'conf.php';
-require_once 'Lang/en.php';
-require_once 'Global/Database.php';
-require_once 'Global/fncs.php';
-require_once 'Global/SendMail.php';
-require_once 'Proc/auth.php';
+require_once '../../config/conf.php';
+require_once '../../config/Lang/en.php';
+require_once '../../app/Services/Global/Database.php';
+require_once '../../app/Services/Global/fncs.php';
+require_once '../../app/Services/Global/SendMail.php';
+require_once '../../app/Controllers/Proc/auth.php';
 
 $ObjFncs = new fncs();
 $ObjSendMail = new SendMail();
@@ -73,7 +73,6 @@ if ($stage === 'form' && isset($_POST['signup_submit'])) {
         }
     }
 }
-}
 
 ?>
 <!DOCTYPE html>
@@ -101,6 +100,11 @@ if ($stage === 'form' && isset($_POST['signup_submit'])) {
     </style>
 </head>
 <body>
+    <!-- Back to Home Link -->
+    <a href="../index.php" style="position: fixed; top: 20px; left: 20px; z-index: 1000; text-decoration: none; color: #667eea; background: rgba(255,255,255,0.9); padding: 8px 16px; border-radius: 25px; backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: all 0.3s ease;" onmouseover="this.style.background='rgba(255,255,255,1)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.9)'; this.style.transform='translateY(0)'">
+        <i class="bi bi-arrow-left me-2"></i>Back to Home
+    </a>
+    
     <div class="flow-card">
         <div class="flow-header">
             <div class="flow-step">
@@ -150,11 +154,6 @@ if ($stage === 'form' && isset($_POST['signup_submit'])) {
                         <form method="POST">
                             <button type="submit" name="reset_flow" class="btn btn-link text-danger">Register another account</button>
                         </form>
-                    </div>
-                </div>
-            <?php endif; ?>
-        </div>
-    </div>
                     </div>
                 </div>
             <?php endif; ?>

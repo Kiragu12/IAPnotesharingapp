@@ -10,7 +10,7 @@ use PHPMailer\PHPMailer\Exception;
 class SendMail {
     public function Send_Mail($conf, $mailCnt) {
         //Load Composer's autoloader (created by composer, not included with PHPMailer)
-        require __DIR__ . '/../vendor/autoload.php';
+        require __DIR__ . '/../../../vendor/autoload.php';
         //Create an instance; passing `true` enables exceptions
         $mail = new PHPMailer(true);
 
@@ -42,8 +42,13 @@ try {
     $mail->send();
     return true; // Return success
 } catch (Exception $e) {
-    error_log("Email sending failed: " . $e->getMessage()); // Log detailed error
-    error_log("SMTP Debug Info: " . $mail->ErrorInfo); // Log SMTP debug info
+    $debug_log = __DIR__ . '/../../../debug.log';
+    error_log("SENDMAIL ERROR: " . $e->getMessage(), 3, $debug_log); 
+    error_log("SENDMAIL SMTP DEBUG: " . $mail->ErrorInfo, 3, $debug_log); 
+    
+    // Log the full configuration (without password) for debugging
+    error_log("SENDMAIL CONFIG - Host: " . $conf['smtp_host'] . ", Port: " . $conf['smtp_port'] . ", User: " . $conf['smtp_user'], 3, $debug_log);
+    
     return false; // Return failure status
 }
     }

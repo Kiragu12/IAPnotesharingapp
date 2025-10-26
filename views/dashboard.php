@@ -3,7 +3,7 @@
 session_start();
 
 // Load classes for message handling
-require_once 'Global/fncs.php';
+require_once '../app/Services/Global/fncs.php';
 $ObjFncs = new fncs();
 
 // Check if user is logged in, otherwise show as guest
@@ -223,8 +223,8 @@ if ($first_login) {
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                     <?php else: ?>
-                        <li><a class="dropdown-item text-success" href="signin.php"><i class="bi bi-box-arrow-in-right me-2"></i>Sign In</a></li>
-                        <li><a class="dropdown-item" href="signup.php"><i class="bi bi-person-plus me-2"></i>Sign Up</a></li>
+                        <li><a class="dropdown-item text-success" href="auth/signin.php"><i class="bi bi-box-arrow-in-right me-2"></i>Sign In</a></li>
+                        <li><a class="dropdown-item" href="auth/signup.php"><i class="bi bi-person-plus me-2"></i>Sign Up</a></li>
                     <?php endif; ?>
                 </ul>
             </div>

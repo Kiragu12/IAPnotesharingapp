@@ -1,5 +1,6 @@
 <?php
-include_once "ClassAutoLoad.php";
+session_start();
+require_once '../../config/ClassAutoLoad.php';
 
 // Handle form submission
 if (isset($_POST['forgot_password'])) {

@@ -4,12 +4,12 @@ session_start();
 
 // Redirect to dashboard if already logged in (but not from auto-login)
 if (isset($_SESSION['user_id']) && !isset($_SESSION['auto_login'])) {
-    header('Location: dashboard.php');
+    header('Location: ../dashboard.php');
     exit();
 }
 
 // Debug logging for signin.php
-$debug_log = __DIR__ . '/debug.log';
+$debug_log = __DIR__ . '/../../debug.log';
 error_log("DEBUG: signin.php accessed - Method: " . ($_SERVER['REQUEST_METHOD'] ?? 'NOT SET') . " - " . date('Y-m-d H:i:s'), 3, $debug_log);
 
 if (!empty($_POST)) {
@@ -19,7 +19,7 @@ if (!empty($_POST)) {
 // Process login BEFORE any HTML output
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
     error_log("DEBUG: About to call login function from signin.php", 3, $debug_log);
-    require_once 'ClassAutoLoad.php';
+    require_once '../../config/ClassAutoLoad.php';
     // This will redirect to two_factor_auth.php if successful
     $ObjAuth->login($conf, $ObjFncs, $ObjSendMail);
     error_log("DEBUG: Returned from login function (should not see this if redirect works)", 3, $debug_log);
@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
 }
 
 // Load classes for displaying messages
-require_once 'ClassAutoLoad.php';
+require_once '../../config/ClassAutoLoad.php';
 
 // Get any error messages
 $err = $ObjFncs->getMsg('errors') ?: array();
@@ -379,7 +379,7 @@ $msg = $ObjFncs->getMsg('msg') ?: '';
     </style>
 </head>
 <body>
-    <a href="index.php" class="back-btn">
+    <a href="../index.php" class="back-btn">
         <i class="bi bi-arrow-left me-2"></i>Back to Home
     </a>
     
@@ -443,7 +443,7 @@ $msg = $ObjFncs->getMsg('msg') ?: '';
                                 // Redirect to dashboard after 2 seconds
                                 echo '<script>
                                     setTimeout(function() {
-                                        window.location.href = "dashboard.php";
+                                        window.location.href = "../dashboard.php";
                                     }, 2000);
                                 </script>';
                                 

@@ -5,19 +5,19 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 // Load configuration
-require_once 'conf.php';
+require_once __DIR__ . '/conf.php';
 
 // Load language file
 $lang = array();
-require_once 'Lang/en.php';
+require_once __DIR__ . '/Lang/en.php';
 
 // Load required classes
-require_once 'Global/fncs.php';
-require_once 'Layouts/layouts.php';
-require_once 'Forms/forms.php';
-require_once 'Proc/auth.php';
-require_once 'Global/SendMail.php';
-require_once 'Global/Database.php';
+require_once __DIR__ . '/../app/Services/Global/fncs.php';
+require_once __DIR__ . '/../views/Layouts/layouts.php';
+require_once __DIR__ . '/../views/Forms/forms.php';
+require_once __DIR__ . '/../app/Controllers/Proc/auth.php';
+require_once __DIR__ . '/../app/Services/Global/SendMail.php';
+require_once __DIR__ . '/../app/Services/Global/Database.php';
 
 // Initialize objects
 $ObjFncs = new fncs();
