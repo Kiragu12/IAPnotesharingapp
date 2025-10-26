@@ -96,6 +96,13 @@ class Database {
     }
     
     /**
+     * Get last inserted ID
+     */
+    public function lastInsertId() {
+        return $this->pdo->lastInsertId();
+    }
+    
+    /**
      * Count rows
      */
     public function count($sql, $params = []) {

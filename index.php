@@ -2,11 +2,17 @@
 // Start session
 session_start();
 
+// Load required files for message handling
+require_once 'ClassAutoLoad.php';
+
 // Redirect to dashboard if already logged in
 if (isset($_SESSION['user_id'])) {
     header('Location: dashboard.php');
     exit();
 }
+
+// Get any signup success messages
+$signup_message = $ObjFncs->getMsg('signup_success') ?: '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -339,18 +345,46 @@ if (isset($_SESSION['user_id'])) {
     <!-- Hero Section -->
     <section class="hero-section">
         <div class="container">
+            
+            <?php if (!empty($signup_message)): ?>
+                <!-- Signup Success Message -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 15px; border: none; background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-check-circle-fill me-3" style="font-size: 2rem; color: #28a745;"></i>
+                                <div class="flex-grow-1">
+                                    <h5 class="alert-heading mb-1">Account Created Successfully! 🎉</h5>
+                                    <p class="mb-0"><?= htmlspecialchars($signup_message) ?></p>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+            
             <div class="row align-items-center">
                 <div class="col-lg-6">
                     <div class="hero-content animate-fade-up">
                         <h1 class="hero-title">Share Knowledge,<br>Build Together</h1>
                         <p class="hero-subtitle">Connect with fellow students, share your notes, and create a collaborative learning community that grows together.</p>
                         <div class="hero-buttons">
-                            <a href="signup.php" class="btn btn-primary-hero">
-                                <i class="bi bi-rocket-takeoff me-2"></i>Start Sharing
-                            </a>
-                            <a href="dashboard.php" class="btn btn-outline-hero">
-                                <i class="bi bi-eye me-2"></i>View Demo
-                            </a>
+                            <?php if (!empty($signup_message)): ?>
+                                <a href="signin.php" class="btn btn-primary-hero">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In Now
+                                </a>
+                                <a href="dashboard.php" class="btn btn-outline-hero">
+                                    <i class="bi bi-eye me-2"></i>View Demo
+                                </a>
+                            <?php else: ?>
+                                <a href="signup.php" class="btn btn-primary-hero">
+                                    <i class="bi bi-rocket-takeoff me-2"></i>Start Sharing
+                                </a>
+                                <a href="dashboard.php" class="btn btn-outline-hero">
+                                    <i class="bi bi-eye me-2"></i>View Demo
+                                </a>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

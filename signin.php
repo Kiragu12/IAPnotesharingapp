@@ -8,12 +8,24 @@ if (isset($_SESSION['user_id']) && !isset($_SESSION['auto_login'])) {
     exit();
 }
 
+// Debug logging for signin.php
+$debug_log = __DIR__ . '/debug.log';
+error_log("DEBUG: signin.php accessed - Method: " . ($_SERVER['REQUEST_METHOD'] ?? 'NOT SET') . " - " . date('Y-m-d H:i:s'), 3, $debug_log);
+
+if (!empty($_POST)) {
+    error_log("DEBUG: POST data in signin.php: " . print_r($_POST, true), 3, $debug_log);
+}
+
 // Process login BEFORE any HTML output
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
+    error_log("DEBUG: About to call login function from signin.php", 3, $debug_log);
     require_once 'ClassAutoLoad.php';
     // This will redirect to two_factor_auth.php if successful
     $ObjAuth->login($conf, $ObjFncs, $ObjSendMail);
+    error_log("DEBUG: Returned from login function (should not see this if redirect works)", 3, $debug_log);
     // If we're still here, login failed - errors are in session
+} else if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    error_log("DEBUG: POST request received but signin parameter missing: " . print_r(array_keys($_POST), true), 3, $debug_log);
 }
 
 // Load classes for displaying messages
@@ -452,6 +464,9 @@ $msg = $ObjFncs->getMsg('msg') ?: '';
                             </div>
                             
                             <form action="" method="post" autocomplete="off" class="needs-validation" novalidate>
+                                <!-- Hidden input to ensure signin parameter is sent -->
+                                <input type="hidden" name="signin" value="1">
+                                
                                 <!-- Email Field with Bootstrap Input Group -->
                                 <div class="mb-3">
                                     <label for="email" class="form-label fw-semibold text-dark">
@@ -514,7 +529,7 @@ $msg = $ObjFncs->getMsg('msg') ?: '';
                                 <div class="row align-items-center mb-4">
                                     <div class="col-md-6">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="remember" name="remember_me" style="transform: scale(1.1);">
+                                            <input class="form-check-input" type="checkbox" id="remember" name="remember_me" value="1" style="transform: scale(1.1);">
                                             <label class="form-check-label text-muted" for="remember">
                                                 Remember me for 30 days
                                             </label>
@@ -529,7 +544,7 @@ $msg = $ObjFncs->getMsg('msg') ?: '';
                                 
                                 <!-- Submit Button with Loading State -->
                                 <div class="d-grid mb-3">
-                                    <button type="submit" class="btn btn-signin position-relative" name="signin" id="submitBtn">
+                                    <button type="submit" class="btn btn-signin position-relative" name="signin" value="1" id="submitBtn">
                                         <span id="submitText">
                                             <i class="bi bi-box-arrow-in-right me-2"></i>Sign In to Dashboard
                                         </span>

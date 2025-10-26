@@ -1,0 +1,86 @@
+DEBUG: signup.php accessed - Method: GET - 2025-10-26 19:16:11DEBUG: signup.php accessed - Method: POST - 2025-10-26 19:16:31DEBUG: POST data in signup.php: Array
+(
+    [fullname] => AustineIgunza
+    [email] => austineigunza@gmail.com
+    [password] => Igunza12
+)
+DEBUG: signup.php accessed - Method: POST - 2025-10-26 19:17:15DEBUG: POST data in signup.php: Array
+(
+    [fullname] => AustineIgunza
+    [email] => austineigunza@gmail.com
+    [password] => Igunza12
+)
+DEBUG: signup.php accessed - Method: GET - 2025-10-26 19:25:58DEBUG: signup.php accessed - Method: POST - 2025-10-26 19:26:15DEBUG: POST data in signup.php: Array
+(
+    [fullname] => AustineIgunza
+    [email] => austineigunza@gmail.com
+    [password] => Igunza12
+)
+DEBUG: signup.php accessed - Method: GET - 2025-10-26 19:28:01DEBUG: signup_test.php accessed - Method: GET - 2025-10-26 19:28:29DEBUG: signup.php accessed - Method: GET - 2025-10-26 19:29:30DEBUG: signup.php accessed - Method: POST - 2025-10-26 19:29:56DEBUG: POST data in signup.php: Array
+(
+    [fullname] => AustineIgunza
+    [email] => austineigunza@gmail.com
+    [password] => Igunza@12
+    [terms] => 1
+)
+DEBUG: POST request received but signup parameter missing: Array
+(
+    [0] => fullname
+    [1] => email
+    [2] => password
+    [3] => terms
+)
+DEBUG: signup.php accessed - Method: GET - 2025-10-26 19:30:22DEBUG: signup.php accessed - Method: POST - 2025-10-26 19:30:48DEBUG: POST data in signup.php: Array
+(
+    [fullname] => Mmattaigunza
+    [email] => austineigunza@gmail.com
+    [password] => Igunza12
+    [terms] => 1
+)
+DEBUG: POST request received but signup parameter missing: Array
+(
+    [0] => fullname
+    [1] => email
+    [2] => password
+    [3] => terms
+)
+DEBUG: signup.php accessed - Method: GET - 2025-10-26 19:31:56DEBUG: signup.php accessed - Method: POST - 2025-10-26 19:32:12DEBUG: POST data in signup.php: Array
+(
+    [signup] => 1
+    [fullname] => AustineIgunza
+    [email] => austineigunza@gmail.com
+    [password] => Igunza12
+    [terms] => 1
+)
+DEBUG: About to call signup function from signup.phpDEBUG: Signup function called - 2025-10-26 19:32:12DEBUG: POST request with signup button detectedDEBUG: Form data - Name: Austineigunza, Email: austineigunza@gmail.comDEBUG: Validation completed. Errors count: 0DEBUG: No validation errors, proceeding with database operationsDEBUG: Database connection establishedDEBUG: Email is available, proceeding with insertDEBUG: Insert executed, rows affected: 1DEBUG: User created with ID: 4DEBUG: Attempting to send emailDEBUG: Email sent result: trueDEBUG: About to redirect to index.phpDEBUG: signin.php accessed - Method: POST - 2025-10-26 19:34:45DEBUG: POST data in signin.php: Array
+(
+    [email] => austineigunza@gmail.com
+    [password] => Igunza@12
+    [remember_me] => on
+)
+DEBUG: POST request received but signin parameter missing: Array
+(
+    [0] => email
+    [1] => password
+    [2] => remember_me
+)
+DEBUG: signin.php accessed - Method: POST - 2025-10-26 19:35:02DEBUG: POST data in signin.php: Array
+(
+    [signin] => 1
+    [email] => austineigunza@gmail.com
+    [password] => Igunza12
+    [remember_me] => 1
+)
+DEBUG: About to call login function from signin.phpDEBUG: two_factor_auth_new.php accessed - Method: GET - 2025-10-26 19:43:08DEBUG: signin.php accessed - Method: GET - 2025-10-26 19:43:19DEBUG: signin.php accessed - Method: POST - 2025-10-26 19:43:30DEBUG: POST data in signin.php: Array
+(
+    [signin] => 1
+    [email] => austineigunza@gmail.com
+    [password] => Igunza12
+    [remember_me] => 1
+)
+DEBUG: About to call login function from signin.phpDEBUG: two_factor_auth_new.php accessed - Method: GET - 2025-10-26 19:43:35DEBUG: two_factor_auth_new.php accessed - Method: POST - 2025-10-26 19:43:49DEBUG: POST data in two_factor_auth_new.php: Array
+(
+    [verify_2fa] => 1
+    [verification_code] => 776319
+)
+DEBUG: About to call verify2FA functionDEBUG: 2FA verification successful, redirecting to dashboard

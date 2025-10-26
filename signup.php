@@ -11,10 +11,22 @@ if (isset($_SESSION['user_id'])) {
 // Load required files
 require_once 'ClassAutoLoad.php';
 
+// Debug logging for signup.php
+$debug_log = __DIR__ . '/debug.log';
+error_log("DEBUG: signup.php accessed - Method: " . ($_SERVER['REQUEST_METHOD'] ?? 'NOT SET') . " - " . date('Y-m-d H:i:s'), 3, $debug_log);
+
+if (!empty($_POST)) {
+    error_log("DEBUG: POST data in signup.php: " . print_r($_POST, true), 3, $debug_log);
+}
+
 // Process signup if form submitted BEFORE any output
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
+    error_log("DEBUG: About to call signup function from signup.php", 3, $debug_log);
     // This will redirect and exit if successful, so no further code will run
     $ObjAuth->signup($conf, $ObjFncs, $lang, $ObjSendMail);
+    error_log("DEBUG: Returned from signup function (should not see this if redirect works)", 3, $debug_log);
+} else if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    error_log("DEBUG: POST request received but signup parameter missing: " . print_r(array_keys($_POST), true), 3, $debug_log);
 }
 
 // Initialize variables for displaying the form
@@ -336,7 +348,10 @@ $msg = $ObjFncs->getMsg('msg') ?: '';
                             }
                             ?>
                             
-                            <form action="" method="post" autocomplete="off" class="needs-validation" novalidate>
+                            <form action="" method="post" autocomplete="off">
+                                <!-- Hidden input to ensure signup parameter is sent -->
+                                <input type="hidden" name="signup" value="1">
+                                
                                 <!-- Full Name Field with Bootstrap Input Group -->
                                 <div class="mb-3">
                                     <label for="fullname" class="form-label fw-semibold text-dark">
@@ -442,7 +457,7 @@ $msg = $ObjFncs->getMsg('msg') ?: '';
                                 <!-- Terms and Conditions with Custom Checkbox -->
                                 <div class="mb-4">
                                     <div class="form-check d-flex align-items-start">
-                                        <input class="form-check-input me-3 mt-1" type="checkbox" id="terms" required style="transform: scale(1.2);">
+                                        <input class="form-check-input me-3 mt-1" type="checkbox" id="terms" name="terms" value="1" required style="transform: scale(1.2);">
                                         <label class="form-check-label text-muted" for="terms">
                                             I agree to the <a href="#" class="text-decoration-none text-primary fw-semibold">Terms of Service</a> and <a href="#" class="text-decoration-none text-primary fw-semibold">Privacy Policy</a>
                                         </label>
@@ -454,7 +469,7 @@ $msg = $ObjFncs->getMsg('msg') ?: '';
                                 
                                 <!-- Submit Button with Loading State -->
                                 <div class="d-grid">
-                                    <button type="submit" class="btn btn-signup position-relative" name="signup" id="submitBtn">
+                                    <button type="submit" class="btn btn-signup position-relative" name="signup" value="1" id="submitBtn">
                                         <span id="submitText">
                                             <i class="bi bi-person-plus me-2"></i>Create Account
                                         </span>
@@ -479,26 +494,6 @@ $msg = $ObjFncs->getMsg('msg') ?: '';
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Bootstrap Form Validation
-        (function() {
-            'use strict';
-            window.addEventListener('load', function() {
-                var forms = document.getElementsByClassName('needs-validation');
-                var validation = Array.prototype.filter.call(forms, function(form) {
-                    form.addEventListener('submit', function(event) {
-                        if (form.checkValidity() === false) {
-                            event.preventDefault();
-                            event.stopPropagation();
-                        } else {
-                            // Show loading state
-                            showLoadingState();
-                        }
-                        form.classList.add('was-validated');
-                    }, false);
-                });
-            }, false);
-        })();
-        
         // Password visibility toggle
         document.getElementById('togglePassword').addEventListener('click', function() {
             const passwordInput = document.getElementById('password');
@@ -640,6 +635,11 @@ $msg = $ObjFncs->getMsg('msg') ?: '';
             submitText.classList.add('d-none');
             submitSpinner.classList.remove('d-none');
         }
+        
+        // Add form submission handler for loading state
+        document.querySelector('form').addEventListener('submit', function() {
+            showLoadingState();
+        });
         
         // Enhanced form input effects
         document.querySelectorAll('.form-control').forEach(input => {
