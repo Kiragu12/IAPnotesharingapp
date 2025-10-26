@@ -1,663 +1,176 @@
 <?php
-// Start session
+/**
+ * Guided Sign-Up Page (Test)
+ * Allows new users to register, confirms account creation, and links to sign-in.
+ */
+
 session_start();
+require_once 'conf.php';
+require_once 'Lang/en.php';
+require_once 'Global/Database.php';
+require_once 'Global/fncs.php';
+require_once 'Global/SendMail.php';
+require_once 'Proc/auth.php';
 
-// Redirect to dashboard if already logged in
-if (isset($_SESSION['user_id'])) {
-    header('Location: dashboard.php');
-    exit();
+$ObjFncs = new fncs();
+$ObjSendMail = new SendMail();
+$ObjAuth = new auth();
+$db = new Database($conf);
+
+$alerts = [];
+$stage = $_SESSION['signup_stage'] ?? 'form';
+
+function addAlert(array &$alerts, string $type, string $message): void {
+    $alerts[] = [
+        'type' => $type,
+        'message' => $message
+    ];
 }
 
-// Load required files
-require_once 'ClassAutoLoad.php';
-
-// Debug logging for signup.php
-$debug_log = __DIR__ . '/debug.log';
-error_log("DEBUG: signup.php accessed - Method: " . ($_SERVER['REQUEST_METHOD'] ?? 'NOT SET') . " - " . date('Y-m-d H:i:s'), 3, $debug_log);
-
-if (!empty($_POST)) {
-    error_log("DEBUG: POST data in signup.php: " . print_r($_POST, true), 3, $debug_log);
+if (isset($_POST['reset_flow'])) {
+    unset($_SESSION['signup_stage']);
+    header('Location: signup.php');
+    exit;
 }
 
-// Process signup if form submitted BEFORE any output
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
-    error_log("DEBUG: About to call signup function from signup.php", 3, $debug_log);
-    // This will redirect and exit if successful, so no further code will run
-    $ObjAuth->signup($conf, $ObjFncs, $lang, $ObjSendMail);
-    error_log("DEBUG: Returned from signup function (should not see this if redirect works)", 3, $debug_log);
-} else if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    error_log("DEBUG: POST request received but signup parameter missing: " . print_r(array_keys($_POST), true), 3, $debug_log);
+if ($stage === 'form' && isset($_POST['signup_submit'])) {
+    $fullname = trim($_POST['fullname'] ?? '');
+    $email = strtolower(trim($_POST['email'] ?? ''));
+    $password = $_POST['password'] ?? '';
+
+    // Basic validation
+    if (!preg_match('/^[a-zA-Z ]+$/', $fullname)) {
+        addAlert($alerts, 'danger', 'Full name must contain only letters and spaces.');
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        addAlert($alerts, 'danger', 'Please enter a valid email address.');
+    } elseif (strlen($password) < ($conf['min_password_length'] ?? 8)) {
+        addAlert($alerts, 'danger', 'Password must be at least ' . ($conf['min_password_length'] ?? 8) . ' characters long.');
+    } else {
+        $email_domain = substr(strrchr($email, "@"), 1);
+        if (!in_array($email_domain, $conf['valid_email_domain'])) {
+            addAlert($alerts, 'danger', 'Email domain must be one of: ' . implode(', ', $conf['valid_email_domain']));
+        } else {
+            try {
+                $sql_check = "SELECT id FROM users WHERE email = :email LIMIT 1";
+                $existing_user = $db->fetchOne($sql_check, [':email' => $email]);
+                if ($existing_user) {
+                    addAlert($alerts, 'danger', 'An account with this email already exists. Please sign in instead.');
+                } else {
+                    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+                    $sql_insert = "INSERT INTO users (email, password, full_name, email_verified, is_2fa_enabled, created_at) VALUES (:email, :password, :full_name, 0, 1, NOW())";
+                    $db->execute($sql_insert, [
+                        ':email' => $email,
+                        ':password' => $hashedPassword,
+                        ':full_name' => $fullname
+                    ]);
+                    $_SESSION['signup_stage'] = 'success';
+                    $stage = 'success';
+                    addAlert($alerts, 'success', 'Account created! You can now sign in below.');
+                }
+            } catch (Exception $e) {
+                addAlert($alerts, 'danger', 'Error during signup: ' . $e->getMessage());
+            }
+        }
+    }
+}
 }
 
-// Initialize variables for displaying the form
-$err = $ObjFncs->getMsg('errors') ?: array();
-$msg = $ObjFncs->getMsg('msg') ?: '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - NotesShare Academy</title>
+    <title>Sign Up - <?php echo htmlspecialchars($conf['site_name'] ?? 'NotesShare'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            position: relative;
-            overflow-x: hidden;
-        }
-        
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="20" fill="url(%23grid)"/></svg>');
-            opacity: 0.3;
-        }
-        
-        .signup-container {
-            position: relative;
-            z-index: 2;
-            width: 100%;
-        }
-        
-        .signup-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            overflow: hidden;
-        }
-        
-        .signup-header {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-            padding: 2rem;
-            text-align: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .signup-logo {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1rem;
-            font-size: 2rem;
-            color: white;
-        }
-        
-        .signup-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 0.5rem;
-        }
-        
-        .signup-subtitle {
-            color: #666;
-            font-weight: 400;
-        }
-        
-        .signup-form {
-            padding: 2rem;
-        }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
-            position: relative;
-        }
-        
-        .form-label {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 0.5rem;
-            display: block;
-        }
-        
-        .form-control {
-            border: 2px solid #e9ecef;
-            border-radius: 12px;
-            padding: 0.875rem 1rem;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
-        }
-        
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-            background: white;
-        }
-        
-        .form-control.is-valid {
-            border-color: #198754;
-            background: #f8fff9;
-        }
-        
-        .form-control.is-invalid {
-            border-color: #dc3545;
-            background: #fff8f8;
-        }
-        
-        .input-group-text {
-            border: 2px solid #e9ecef;
-            background: #f8f9fa;
-            color: #667eea;
-            font-weight: 500;
-        }
-        
-        .input-group:focus-within .input-group-text {
-            border-color: #667eea;
-            background: white;
-        }
-        
-        .input-group:focus-within .form-control {
-            border-color: #667eea;
-        }
-        
-        .valid-feedback, .invalid-feedback {
-            font-size: 0.875rem;
-            font-weight: 500;
-            margin-top: 0.5rem;
-        }
-        
-        .valid-feedback {
-            color: #198754;
-        }
-        
-        .invalid-feedback {
-            color: #dc3545;
-        }
-        
-        .progress {
-            background-color: rgba(0, 0, 0, 0.1);
-            border-radius: 2px;
-        }
-        
-        .progress-bar {
-            border-radius: 2px;
-            transition: all 0.3s ease;
-        }
-        
-        .form-check-input:checked {
-            background-color: #667eea;
-            border-color: #667eea;
-        }
-        
-        .form-check-input:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        
-        .btn-signup {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 12px;
-            padding: 1rem 2rem;
-            font-weight: 600;
-            font-size: 1.1rem;
-            color: white;
-            width: 100%;
-            transition: all 0.3s ease;
-            margin-top: 1rem;
-        }
-        
-        .btn-signup:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-            color: white;
-        }
-        
-        .login-link {
-            text-align: center;
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid #e9ecef;
-        }
-        
-        .login-link a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.3s ease;
-        }
-        
-        .login-link a:hover {
-            color: #764ba2;
-        }
-        
-        .back-btn {
-            position: absolute;
-            top: 2rem;
-            left: 2rem;
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 25px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            z-index: 10;
-        }
-        
-        .back-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
-            color: white;
-            text-decoration: none;
-        }
-        
-        .alert {
-            border-radius: 12px;
-            border: none;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-        
-        .alert-danger {
-            background: rgba(220, 53, 69, 0.1);
-            color: #dc3545;
-            border-left: 4px solid #dc3545;
-        }
-        
-        .alert-success {
-            background: rgba(25, 135, 84, 0.1);
-            color: #198754;
-            border-left: 4px solid #198754;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .signup-card {
-                margin: 1rem;
-                border-radius: 15px;
-            }
-            
-            .signup-header, .signup-form {
-                padding: 1.5rem;
-            }
-            
-            .back-btn {
-                top: 1rem;
-                left: 1rem;
-                padding: 0.5rem 1rem;
-                font-size: 0.9rem;
-            }
-        }
-        
-        /* Animations */
-        @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .signup-card {
-            animation: slideInUp 0.8s ease forwards;
-        }
+        :root{--brand-1:#667eea;--brand-2:#764ba2;--muted:#6c757d}
+        body{background:linear-gradient(135deg,var(--brand-2),var(--brand-1));min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 12px;font-family:'Poppins',system-ui,Roboto,Arial;color:#111}
+        .flow-card{max-width:640px;width:100%;background:#fff;border-radius:14px;box-shadow:0 14px 36px rgba(20,25,60,0.12);overflow:hidden;border:1px solid rgba(110,115,240,0.06)}
+        .flow-header{padding:2rem 1.5rem 1rem;text-align:center;background:linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.35))}
+        .flow-step{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+        .flow-step span{background:rgba(102,126,234,0.08);color:var(--brand-1);padding:7px 12px;border-radius:999px;font-weight:600}
+        .form-control:focus{box-shadow:0 8px 20px rgba(102,126,234,0.12);border-color:var(--brand-1)}
+        .btn-primary{background:linear-gradient(90deg,var(--brand-1),var(--brand-2));border:none}
+        .small-muted{color:var(--muted)}
+        .debug-box{background:#fbfdff;border-radius:10px;padding:14px;border:1px solid rgba(102,126,234,0.08);margin-top:14px;font-size:0.95rem}
+        .otp-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:linear-gradient(90deg,var(--brand-1),var(--brand-2));color:#fff;padding:8px 12px;border-radius:8px;letter-spacing:4px;font-weight:700}
+        .btn-copy{background:linear-gradient(90deg,var(--brand-1),var(--brand-2));color:#fff;border:none;padding:.45rem .65rem;border-radius:8px;cursor:pointer}
+        @media (max-width:540px){.flow-card{margin:16px}.flow-header h2{font-size:1.2rem}}
     </style>
 </head>
 <body>
-    <a href="index.php" class="back-btn">
-        <i class="bi bi-arrow-left me-2"></i>Back to Home
-    </a>
-    
-    <div class="signup-container">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-lg-5 col-md-7 col-sm-9">
-                    <div class="signup-card">
-                        <div class="signup-header">
-                            <div class="signup-logo">
-                                <i class="bi bi-journal-bookmark"></i>
-                            </div>
-                            <h2 class="signup-title">Join NotesShare Academy</h2>
-                            <p class="signup-subtitle">Start your collaborative learning journey today</p>
-                        </div>
-                        
-                        <div class="signup-form">
-                            <?php
-                            // Display success/error messages
-                            if (!empty($msg)) {
-                                echo $msg;
-                            }
-                            ?>
-                            
-                            <form action="" method="post" autocomplete="off">
-                                <!-- Hidden input to ensure signup parameter is sent -->
-                                <input type="hidden" name="signup" value="1">
-                                
-                                <!-- Full Name Field with Bootstrap Input Group -->
-                                <div class="mb-3">
-                                    <label for="fullname" class="form-label fw-semibold text-dark">
-                                        <i class="bi bi-person me-2 text-primary"></i>Full Name
-                                    </label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px;">
-                                            <i class="bi bi-person text-primary"></i>
-                                        </span>
-                                        <input type="text" 
-                                               class="form-control border-start-0 <?php echo isset($err['fullname_error']) ? 'is-invalid' : ''; ?>" 
-                                               id="fullname" 
-                                               name="fullname" 
-                                               placeholder="Enter your full name" 
-                                               value="<?php echo isset($_SESSION['fullname']) ? $_SESSION['fullname'] : ''; ?>" 
-                                               style="border-radius: 0 12px 12px 0; background: #f8f9fa; padding-left: 0.5rem;"
-                                               required>
-                                        <div class="valid-feedback">
-                                            <i class="bi bi-check-circle me-1"></i>Looks good!
-                                        </div>
-                                        <?php if(isset($err['fullname_error'])) { ?>
-                                            <div class="invalid-feedback">
-                                                <i class="bi bi-exclamation-circle me-1"></i><?php echo $err['fullname_error']; ?>
-                                            </div>
-                                        <?php } ?>
-                                    </div>
-                                </div>
-                                
-                                <!-- Email Field with Bootstrap Input Group -->
-                                <div class="mb-3">
-                                    <label for="email" class="form-label fw-semibold text-dark">
-                                        <i class="bi bi-envelope me-2 text-primary"></i>Email Address
-                                    </label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px;">
-                                            <i class="bi bi-envelope text-primary"></i>
-                                        </span>
-                                        <input type="email" 
-                                               class="form-control border-start-0 <?php echo (isset($err['mailFormat_error']) || isset($err['mailDomain_error'])) ? 'is-invalid' : ''; ?>" 
-                                               id="email" 
-                                               name="email" 
-                                               placeholder="Enter your email address" 
-                                               value="<?php echo isset($_SESSION['email']) ? $_SESSION['email'] : ''; ?>" 
-                                               style="border-radius: 0 12px 12px 0; background: #f8f9fa; padding-left: 0.5rem;"
-                                               required>
-                                        <div class="valid-feedback">
-                                            <i class="bi bi-check-circle me-1"></i>Valid email format!
-                                        </div>
-                                        <?php if(isset($err['mailFormat_error'])) { ?>
-                                            <div class="invalid-feedback">
-                                                <i class="bi bi-exclamation-circle me-1"></i><?php echo $err['mailFormat_error']; ?>
-                                            </div>
-                                        <?php } ?>
-                                        <?php if(isset($err['mailDomain_error'])) { ?>
-                                            <div class="invalid-feedback">
-                                                <i class="bi bi-exclamation-circle me-1"></i><?php echo $err['mailDomain_error']; ?>
-                                            </div>
-                                        <?php } ?>
-                                    </div>
-                                </div>
-                                
-                                <!-- Password Field with Bootstrap Input Group and Strength Indicator -->
-                                <div class="mb-3">
-                                    <label for="password" class="form-label fw-semibold text-dark">
-                                        <i class="bi bi-lock me-2 text-primary"></i>Password
-                                    </label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px;">
-                                            <i class="bi bi-lock text-primary"></i>
-                                        </span>
-                                        <input type="password" 
-                                               class="form-control border-start-0 border-end-0 <?php echo isset($err['password_error']) ? 'is-invalid' : ''; ?>" 
-                                               id="password" 
-                                               name="password" 
-                                               placeholder="Create a strong password" 
-                                               value="<?php echo isset($_SESSION['password']) ? $_SESSION['password'] : ''; ?>" 
-                                               style="background: #f8f9fa; padding-left: 0.5rem; padding-right: 0.5rem;"
-                                               required>
-                                        <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePassword" style="border-radius: 0 12px 12px 0; background: #f8f9fa;">
-                                            <i class="bi bi-eye" id="eyeIcon"></i>
-                                        </button>
-                                        <div class="valid-feedback">
-                                            <i class="bi bi-check-circle me-1"></i>Strong password!
-                                        </div>
-                                        <?php if(isset($err['password_error'])) { ?>
-                                            <div class="invalid-feedback">
-                                                <i class="bi bi-exclamation-circle me-1"></i><?php echo $err['password_error']; ?>
-                                            </div>
-                                        <?php } ?>
-                                    </div>
-                                    <!-- Password Strength Indicator -->
-                                    <div class="mt-2">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <small class="text-muted">Password strength:</small>
-                                            <small id="strengthText" class="text-muted">Weak</small>
-                                        </div>
-                                        <div class="progress" style="height: 4px; border-radius: 2px;">
-                                            <div id="strengthBar" class="progress-bar" role="progressbar" style="width: 0%; transition: all 0.3s ease;"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Terms and Conditions with Custom Checkbox -->
-                                <div class="mb-4">
-                                    <div class="form-check d-flex align-items-start">
-                                        <input class="form-check-input me-3 mt-1" type="checkbox" id="terms" name="terms" value="1" required style="transform: scale(1.2);">
-                                        <label class="form-check-label text-muted" for="terms">
-                                            I agree to the <a href="#" class="text-decoration-none text-primary fw-semibold">Terms of Service</a> and <a href="#" class="text-decoration-none text-primary fw-semibold">Privacy Policy</a>
-                                        </label>
-                                        <div class="invalid-feedback">
-                                            You must agree to the terms before submitting.
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Submit Button with Loading State -->
-                                <div class="d-grid">
-                                    <button type="submit" class="btn btn-signup position-relative" name="signup" value="1" id="submitBtn">
-                                        <span id="submitText">
-                                            <i class="bi bi-person-plus me-2"></i>Create Account
-                                        </span>
-                                        <span id="submitSpinner" class="d-none">
-                                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                                            Creating Account...
-                                        </span>
-                                    </button>
-                                </div>
-                            </form>
-                            
-                            <div class="login-link">
-                                <span class="text-muted">Already have an account?</span>
-                                <a href="signin.php">Sign in here</a>
-                            </div>
-                        </div>
+    <div class="flow-card">
+        <div class="flow-header">
+            <div class="flow-step">
+                <span><i class="bi bi-person-plus me-2"></i>Step 1: Sign Up</span>
+                <span><i class="bi bi-person-check me-2"></i>Step 2: Sign In</span>
+                <span><i class="bi bi-key me-2"></i>Step 3: 2FA</span>
+            </div>
+            <h2 class="fw-bold mb-2">Create Your Account</h2>
+            <p class="text-muted mb-0">Register to get started with secure authentication.</p>
+        </div>
+        <div class="p-4 p-md-5">
+            <?php foreach ($alerts as $alert): ?>
+                <div class="alert alert-<?php echo htmlspecialchars($alert['type']); ?> alert-dismissible fade show" role="alert">
+                    <?php echo $alert['message']; ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endforeach; ?>
+            <?php if ($stage === 'form'): ?>
+                <form method="POST" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label for="fullname" class="form-label fw-semibold">Full Name</label>
+                        <input type="text" class="form-control" id="fullname" name="fullname" required placeholder="Your full name">
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label fw-semibold">Email address</label>
+                        <input type="email" class="form-control" id="email" name="email" required placeholder="you@example.com">
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label fw-semibold">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required placeholder="At least 8 characters">
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" name="signup_submit" class="btn btn-primary btn-lg">
+                            Create Account <i class="bi bi-person-plus ms-2"></i>
+                        </button>
+                    </div>
+                </form>
+            <?php elseif ($stage === 'success'): ?>
+                <div class="text-center py-4">
+                    <div class="mb-3">
+                        <i class="bi bi-stars" style="font-size: 2.5rem; color: #4c63d9;"></i>
+                    </div>
+                    <h3 class="fw-bold">Account Created!</h3>
+                    <p class="text-muted mb-4">Your account was saved successfully. You can now sign in and complete 2FA.</p>
+                    <div class="d-grid gap-2">
+                        <a href="signin.php" class="btn btn-success btn-lg">Go to Sign-In</a>
+                        <form method="POST">
+                            <button type="submit" name="reset_flow" class="btn btn-link text-danger">Register another account</button>
+                        </form>
                     </div>
                 </div>
-            </div>
+            <?php endif; ?>
         </div>
     </div>
-    
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Password visibility toggle
-        document.getElementById('togglePassword').addEventListener('click', function() {
-            const passwordInput = document.getElementById('password');
-            const eyeIcon = document.getElementById('eyeIcon');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                eyeIcon.className = 'bi bi-eye-slash';
-            } else {
-                passwordInput.type = 'password';
-                eyeIcon.className = 'bi bi-eye';
-            }
-        });
-        
-        // Enhanced password strength indicator
-        document.getElementById('password').addEventListener('input', function() {
-            const password = this.value;
-            const strength = calculatePasswordStrength(password);
-            updatePasswordStrengthUI(strength);
-            
-            // Add real-time validation
-            if (password.length > 0) {
-                if (strength.score >= 3) {
-                    this.classList.remove('is-invalid');
-                    this.classList.add('is-valid');
-                } else {
-                    this.classList.remove('is-valid');
-                    this.classList.add('is-invalid');
-                }
-            }
-        });
-        
-        function calculatePasswordStrength(password) {
-            let score = 0;
-            let feedback = [];
-            
-            if (password.length >= 8) {
-                score++;
-            } else {
-                feedback.push('At least 8 characters');
-            }
-            
-            if (/[a-z]/.test(password)) {
-                score++;
-            } else {
-                feedback.push('Lowercase letter');
-            }
-            
-            if (/[A-Z]/.test(password)) {
-                score++;
-            } else {
-                feedback.push('Uppercase letter');
-            }
-            
-            if (/[0-9]/.test(password)) {
-                score++;
-            } else {
-                feedback.push('Number');
-            }
-            
-            if (/[^A-Za-z0-9]/.test(password)) {
-                score++;
-            } else {
-                feedback.push('Special character');
-            }
-            
-            return { score, feedback };
-        }
-        
-        function updatePasswordStrengthUI(strength) {
-            const strengthBar = document.getElementById('strengthBar');
-            const strengthText = document.getElementById('strengthText');
-            
-            const percentage = (strength.score / 5) * 100;
-            strengthBar.style.width = percentage + '%';
-            
-            // Update color and text based on strength
-            if (strength.score <= 1) {
-                strengthBar.className = 'progress-bar bg-danger';
-                strengthText.textContent = 'Weak';
-                strengthText.className = 'text-danger';
-            } else if (strength.score <= 2) {
-                strengthBar.className = 'progress-bar bg-warning';
-                strengthText.textContent = 'Fair';
-                strengthText.className = 'text-warning';
-            } else if (strength.score <= 3) {
-                strengthBar.className = 'progress-bar bg-info';
-                strengthText.textContent = 'Good';
-                strengthText.className = 'text-info';
-            } else if (strength.score <= 4) {
-                strengthBar.className = 'progress-bar bg-primary';
-                strengthText.textContent = 'Strong';
-                strengthText.className = 'text-primary';
-            } else {
-                strengthBar.className = 'progress-bar bg-success';
-                strengthText.textContent = 'Very Strong';
-                strengthText.className = 'text-success';
-            }
-        }
-        
-        // Real-time email validation
-        document.getElementById('email').addEventListener('input', function() {
-            const email = this.value;
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            
-            if (email.length > 0) {
-                if (emailRegex.test(email)) {
-                    this.classList.remove('is-invalid');
-                    this.classList.add('is-valid');
-                } else {
-                    this.classList.remove('is-valid');
-                    this.classList.add('is-invalid');
-                }
-            }
-        });
-        
-        // Real-time full name validation
-        document.getElementById('fullname').addEventListener('input', function() {
-            const fullname = this.value.trim();
-            
-            if (fullname.length > 0) {
-                if (fullname.length >= 2 && /^[a-zA-Z\s]+$/.test(fullname)) {
-                    this.classList.remove('is-invalid');
-                    this.classList.add('is-valid');
-                } else {
-                    this.classList.remove('is-valid');
-                    this.classList.add('is-invalid');
-                }
-            }
-        });
-        
-        // Loading state for form submission
-        function showLoadingState() {
-            const submitBtn = document.getElementById('submitBtn');
-            const submitText = document.getElementById('submitText');
-            const submitSpinner = document.getElementById('submitSpinner');
-            
-            submitBtn.disabled = true;
-            submitText.classList.add('d-none');
-            submitSpinner.classList.remove('d-none');
-        }
-        
-        // Add form submission handler for loading state
-        document.querySelector('form').addEventListener('submit', function() {
-            showLoadingState();
-        });
-        
-        // Enhanced form input effects
-        document.querySelectorAll('.form-control').forEach(input => {
-            input.addEventListener('focus', function() {
-                this.parentElement.style.transform = 'translateY(-1px)';
-                this.parentElement.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.15)';
+        // copy OTP if present
+        (function(){
+            const btn = document.getElementById('copyOtpBtn2');
+            if(!btn) return;
+            btn.addEventListener('click', function(){
+                const code = this.dataset.clipboardText || '';
+                if(navigator.clipboard) navigator.clipboard.writeText(code).then(()=>{this.textContent='Copied'; setTimeout(()=>this.textContent='Copy',1200)});
             });
-            
-            input.addEventListener('blur', function() {
-                this.parentElement.style.transform = 'translateY(0)';
-                this.parentElement.style.boxShadow = 'none';
-            });
-        });
-        
-        // Auto-focus first field
-        window.addEventListener('load', function() {
-            document.getElementById('fullname').focus();
-        });
+        })();
     </script>
 </body>
 </html>
