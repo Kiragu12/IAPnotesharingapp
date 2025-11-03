@@ -243,7 +243,7 @@ if ($first_login) {
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#my-notes">
+                            <a class="nav-link" href="notes/my-notes.php">
                                 <i class="bi bi-journal-text me-2"></i>My Notes
                             </a>
                         </li>
@@ -306,11 +306,11 @@ if ($first_login) {
                                 <h2 class="fw-bold mb-2">Welcome back, <?php echo htmlspecialchars($user_name); ?>! 👋</h2>
                                 <p class="mb-3 opacity-75">Ready to share knowledge and collaborate with your classmates? Start exploring notes and contributing to the community.</p>
                                 <div>
-                                    <a href="#" class="quick-action-btn">
+                                    <a href="notes/create.php" class="quick-action-btn">
                                         <i class="bi bi-plus-circle me-2"></i>Create Note
                                     </a>
-                                    <a href="#" class="quick-action-btn">
-                                        <i class="bi bi-upload me-2"></i>Upload File
+                                    <a href="notes/my-notes.php" class="quick-action-btn">
+                                        <i class="bi bi-journals me-2"></i>My Notes
                                     </a>
                                     <a href="#" class="quick-action-btn">
                                         <i class="bi bi-people me-2"></i>Browse Community
@@ -432,9 +432,9 @@ if ($first_login) {
                                         <i class="bi bi-journal-text me-2 text-primary"></i>Recent Notes
                                     </h4>
                                     <div class="btn-group">
-                                        <button class="btn btn-primary-custom btn-sm">
+                                        <a href="notes/create.php" class="btn btn-primary-custom btn-sm">
                                             <i class="bi bi-plus-circle me-1"></i>New Note
-                                        </button>
+                                        </a>
                                         <button class="btn btn-outline-secondary btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
                                             <span class="visually-hidden">Toggle Dropdown</span>
                                         </button>
