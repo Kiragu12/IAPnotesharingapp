@@ -15,14 +15,27 @@ class Database {
     
     /**
      * Establish database connection
+     * Supports both MySQL and PostgreSQL (Supabase)
      */
     private function connect() {
         try {
-            // Create DSN (Data Source Name)
-            $dsn = "mysql:host=" . $this->conf['db_host'] . 
-                   ";port=" . $this->conf['db_port'] . 
-                   ";dbname=" . $this->conf['db_name'] . 
-                   ";charset=utf8mb4";
+            // Determine database driver (default to mysql for backwards compatibility)
+            $driver = isset($this->conf['db_driver']) ? $this->conf['db_driver'] : 'mysql';
+            
+            // Create DSN (Data Source Name) based on driver
+            if ($driver === 'pgsql') {
+                // PostgreSQL DSN for Supabase
+                $dsn = "pgsql:host=" . $this->conf['db_host'] . 
+                       ";port=" . $this->conf['db_port'] . 
+                       ";dbname=" . $this->conf['db_name'] . 
+                       ";options='--client_encoding=UTF8'";
+            } else {
+                // MySQL DSN (original)
+                $dsn = "mysql:host=" . $this->conf['db_host'] . 
+                       ";port=" . $this->conf['db_port'] . 
+                       ";dbname=" . $this->conf['db_name'] . 
+                       ";charset=utf8mb4";
+            }
             
             // PDO options for better security and error handling
             $options = [
@@ -30,7 +43,13 @@ class Database {
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES   => false,
                 PDO::ATTR_PERSISTENT         => false,
+                PDO::ATTR_TIMEOUT            => 10, // 10 second timeout
             ];
+            
+            // For PostgreSQL, add connection timeout to DSN
+            if ($driver === 'pgsql') {
+                $dsn .= ";connect_timeout=10";
+            }
             
             // Create PDO instance
             $this->pdo = new PDO($dsn, $this->conf['db_user'], $this->conf['db_pass'], $options);

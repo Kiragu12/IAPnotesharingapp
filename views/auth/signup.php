@@ -5,7 +5,7 @@
  */
 
 session_start();
-require_once '../../config/conf.php';
+require_once '../../conf.php';
 require_once '../../config/Lang/en.php';
 require_once '../../app/Services/Global/Database.php';
 require_once '../../app/Services/Global/fncs.php';

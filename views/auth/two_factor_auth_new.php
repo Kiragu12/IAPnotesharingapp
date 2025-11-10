@@ -50,25 +50,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_2fa'])) {
         $new_code = sprintf("%06d", mt_rand(100000, 999999));
         $expires_at = date('Y-m-d H:i:s', strtotime('+10 minutes'));
         
-        // Update the code in database
+        // Update the code in database (mark old codes as used and insert new one)
         $db = new Database($conf);
-        $sql = "UPDATE two_factor_codes SET code = ?, expires_at = ?, attempts = 0, is_used = 0 
-                WHERE user_id = ? AND code_type = 'login' AND is_used = 0";
-        $db->query($sql, [$new_code, $expires_at, $user_id]);
+        
+        // Mark old codes as used
+        $sql_old = "UPDATE two_factor_codes SET used_at = NOW() 
+                WHERE user_id = ? AND code_type = 'login' AND used_at IS NULL";
+        $db->query($sql_old, [$user_id]);
+        
+        // Insert new code
+        $sql_new = "INSERT INTO two_factor_codes (user_id, code, code_type, expires_at, attempts_used, ip_address) 
+                    VALUES (?, ?, 'login', ?, 0, ?)";
+        $db->query($sql_new, [$user_id, $new_code, $expires_at, $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1']);
+        
+        // Store new code in session for debugging
+        $_SESSION['debug_otp'] = $new_code;
         
         // Send new code via email
-        $mailCnt = "Your new verification code is: " . $new_code . "\n\nThis code expires in 10 minutes.";
-        
-        // Set recipient email in configuration
-        $conf['to_email'] = $user_email;
-        $conf['mail_subject'] = "New Login Verification Code - " . $conf['site_name'];
+        $mailCnt = [
+            'name_from' => $conf['site_name'],
+            'mail_from' => $conf['admin_email'],
+            'name_to' => $_SESSION['temp_user_name'] ?? 'User',
+            'mail_to' => $user_email,
+            'subject' => 'Resent: Your Login Verification Code - ' . $conf['site_name'],
+            'body' => "Your new verification code is: <strong>$new_code</strong><br>This code expires in 10 minutes."
+        ];
         
         $email_sent = $ObjSendMail->Send_Mail($conf, $mailCnt);
         
         if ($email_sent) {
             $ObjFncs->setMsg('msg', '📧 A new verification code has been sent to your email!', 'success');
+            $_SESSION['2fa_email_status'] = 'sent';
         } else {
-            $ObjFncs->setMsg('msg', '❌ Failed to send verification code. Please try again.', 'danger');
+            $ObjFncs->setMsg('msg', '⚠️ Email failed but your new code is: ' . $new_code, 'warning');
+            $_SESSION['2fa_email_status'] = 'failed';
         }
         
     } catch (Exception $e) {
@@ -317,6 +332,16 @@ $user_email = $_SESSION['temp_user_email'] ?? '';
                         
                         <div class="auth-form">
                             <?php
+                            // Display the OTP code if email failed (for debugging)
+                            if (isset($_SESSION['2fa_email_status']) && $_SESSION['2fa_email_status'] === 'failed' && isset($_SESSION['debug_otp'])) {
+                                echo '<div class="alert alert-warning alert-dismissible fade show" role="alert">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    <strong>Email Delivery Failed</strong><br>
+                                    Your verification code is: <strong style="font-size: 1.2em; letter-spacing: 2px;">' . $_SESSION['debug_otp'] . '</strong>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>';
+                            }
+                            
                             // Display success/error messages
                             if (!empty($msg)) {
                                 echo $msg;

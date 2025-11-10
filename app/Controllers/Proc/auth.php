@@ -201,15 +201,27 @@ class auth{
                     $otp_code = sprintf("%06d", mt_rand(100000, 999999));
                     $expires_at = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
+                    error_log("DEBUG: Generated OTP: $otp_code, expires: $expires_at", 3, $debug_log);
+
                     // Insert OTP into two_factor_codes table
-                    $sql_insert = "INSERT INTO two_factor_codes (user_id, email, code, expires_at, attempts, code_type) 
-                                   VALUES (:user_id, :email, :code, :expires_at, 0, 'login')";
-                    $db->query($sql_insert, [
-                        ':user_id' => $user['id'],
-                        ':email' => $user['email'],
-                        ':code' => $otp_code,
-                        ':expires_at' => $expires_at
-                    ]);
+                    $sql_insert = "INSERT INTO two_factor_codes (user_id, code, code_type, expires_at, attempts_used, ip_address) 
+                                   VALUES (:user_id, :code, :code_type, :expires_at, 0, :ip_address)";
+                    
+                    error_log("DEBUG: About to insert OTP into database for user_id: " . $user['id'], 3, $debug_log);
+                    
+                    try {
+                        $db->query($sql_insert, [
+                            ':user_id' => $user['id'],
+                            ':code' => $otp_code,
+                            ':code_type' => 'login',
+                            ':expires_at' => $expires_at,
+                            ':ip_address' => $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'
+                        ]);
+                        error_log("DEBUG: OTP inserted successfully into database", 3, $debug_log);
+                    } catch (Exception $insert_error) {
+                        error_log("DEBUG: Database INSERT error: " . $insert_error->getMessage(), 3, $debug_log);
+                        throw $insert_error; // Re-throw to be caught by outer catch
+                    }
 
                     // Store temporary user info in session
                     $_SESSION['temp_user_id'] = $user['id'];
@@ -255,22 +267,29 @@ class auth{
                         $email_sent = false;
                     }
 
+                    // Store OTP in session for debugging (in case email fails)
+                    $_SESSION['debug_otp'] = $otp_code;
+                    
                     if ($email_sent) {
                         error_log("DEBUG: Email sent successfully, redirecting to 2FA page", 3, $debug_log);
-                        // Redirect to 2FA verification page
-                        header('Location: ../../views/auth/two_factor_auth_new.php');
-                        exit();
+                        $_SESSION['2fa_email_status'] = 'sent';
                     } else {
-                        error_log("DEBUG: Email sending failed, showing error message", 3, $debug_log);
-                        $ObjFncs->setMsg('msg', 'Failed to send verification code. Please try again.', 'danger');
+                        error_log("DEBUG: Email sending failed but proceeding to 2FA page", 3, $debug_log);
+                        $_SESSION['2fa_email_status'] = 'failed';
                     }
+                    
+                    // Always redirect to 2FA page (even if email fails)
+                    error_log("DEBUG: Redirecting to 2FA verification page", 3, $debug_log);
+                    header('Location: ../../views/auth/two_factor_auth_new.php');
+                    exit();
                 } else {
                     $ObjFncs->setMsg('msg', 'Invalid email or password.', 'danger');
                     return false;
                 }
 
             }catch(Exception $e){
-                error_log('Login error: ' . $e->getMessage());
+                error_log('DEBUG: Login error caught: ' . $e->getMessage(), 3, $debug_log);
+                error_log('DEBUG: Login error trace: ' . $e->getTraceAsString(), 3, $debug_log);
                 $ObjFncs->setMsg('msg', 'An error occurred while trying to log you in. Please try again later.', 'danger');
                 return false;
             }
@@ -606,12 +625,12 @@ class auth{
             $db = new Database($conf);
             
             // Check if code is valid and not expired
-            $sql = "SELECT id, code, expires_at, attempts, max_attempts, is_used 
+            $sql = "SELECT id, code, expires_at, attempts_used, max_attempts, used_at 
                     FROM two_factor_codes 
                     WHERE user_id = :user_id 
                     AND code = :code 
                     AND code_type = 'login' 
-                    AND is_used = 0 
+                    AND used_at IS NULL 
                     ORDER BY created_at DESC 
                     LIMIT 1";
             
@@ -623,10 +642,10 @@ class auth{
             if (!$code_record) {
                 // Increment failed attempts for all valid codes for this user
                 $sql_increment = "UPDATE two_factor_codes 
-                                  SET attempts = attempts + 1 
+                                  SET attempts_used = attempts_used + 1 
                                   WHERE user_id = :user_id 
                                   AND code_type = 'login' 
-                                  AND is_used = 0 
+                                  AND used_at IS NULL 
                                   AND expires_at > NOW()";
                 $db->query($sql_increment, [':user_id' => $user_id]);
                 
@@ -641,14 +660,14 @@ class auth{
             }
             
             // Check if too many attempts
-            if ($code_record['attempts'] >= ($code_record['max_attempts'] ?? 5)) {
+            if ($code_record['attempts_used'] >= ($code_record['max_attempts'] ?? 5)) {
                 $ObjFncs->setMsg('msg', 'Too many failed attempts. Please sign in again to get a new code.', 'danger');
                 return false;
             }
             
             // Code is valid - mark it as used
             $sql_mark_used = "UPDATE two_factor_codes 
-                              SET is_used = 1 
+                              SET used_at = NOW() 
                               WHERE id = :code_id";
             $db->query($sql_mark_used, [':code_id' => $code_record['id']]);
             

@@ -2,6 +2,20 @@
 // Start session
 session_start();
 
+// Load core config and services needed for signin processing
+require_once '../../conf.php';
+require_once '../../config/Lang/en.php';
+require_once '../../app/Services/Global/Database.php';
+require_once '../../app/Services/Global/fncs.php';
+require_once '../../app/Services/Global/SendMail.php';
+require_once '../../app/Controllers/Proc/auth.php';
+
+// instantiate helpers used by the form and auth controller
+$ObjFncs = new fncs();
+$ObjSendMail = new SendMail();
+$ObjAuth = new auth();
+$db = new Database($conf);
+
 // Redirect to dashboard if already logged in (but not from auto-login)
 if (isset($_SESSION['user_id']) && !isset($_SESSION['auto_login'])) {
     header('Location: ../dashboard.php');
