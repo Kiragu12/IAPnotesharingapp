@@ -1,23 +1,24 @@
 <?php
-// Start session (but don't require authentication)
+// Start session
 session_start();
 
 // Load classes for message handling
 require_once '../app/Services/Global/fncs.php';
 $ObjFncs = new fncs();
 
-// Check if user is logged in, otherwise show as guest
+// Check if user is logged in
 $is_logged_in = isset($_SESSION['user_id']);
-$user_name = $is_logged_in ? ($_SESSION['user_name'] ?? 'User') : 'Guest';
-$user_email = $is_logged_in ? ($_SESSION['user_email'] ?? '') : 'guest@example.com';
-$user_id = $is_logged_in ? $_SESSION['user_id'] : 0;
-
-// Check for welcome messages (only if logged in)
-$welcome_msg = $is_logged_in ? $ObjFncs->getMsg('msg') : '';
-$first_login = $is_logged_in && isset($_SESSION['first_login']) ? $_SESSION['first_login'] : false;
-if ($first_login) {
-    unset($_SESSION['first_login']); // Clear the flag
+if (!$is_logged_in) {
+    header('Location: auth/signin.php');
+    exit();
 }
+
+$user_name = $_SESSION['user_name'] ?? 'User';
+$user_email = $_SESSION['user_email'] ?? '';
+$user_id = $_SESSION['user_id'];
+
+// Check for welcome messages
+$welcome_msg = $ObjFncs->getMsg('msg');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -238,7 +239,7 @@ if ($first_login) {
                 <div class="sidebar">
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link active" href="#dashboard">
+                            <a class="nav-link active" href="dashboard.php">
                                 <i class="bi bi-house-door me-2"></i>Dashboard
                             </a>
                         </li>
@@ -248,28 +249,8 @@ if ($first_login) {
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#shared-notes">
+                            <a class="nav-link" href="../discovernotes.php">
                                 <i class="bi bi-share me-2"></i>Shared Notes
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#favorites">
-                                <i class="bi bi-heart me-2"></i>Favorites
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#categories">
-                                <i class="bi bi-tags me-2"></i>Categories
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#trash">
-                                <i class="bi bi-trash me-2"></i>Trash
-                            </a>
-                        </li>
-                        <li class="nav-item mt-3">
-                            <a class="nav-link" href="#settings">
-                                <i class="bi bi-gear me-2"></i>Settings
                             </a>
                         </li>
                     </ul>
