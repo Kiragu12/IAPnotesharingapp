@@ -304,9 +304,9 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                         </div>
                     </div>
 
-                    <!-- Stats Cards with Enhanced Bootstrap Structure -->
+                    <!-- Stats Cards - Only My Notes and Shared Notes -->
                     <div class="row g-4 mb-4">
-                        <div class="col-xl-3 col-md-6">
+                        <div class="col-md-6">
                             <div class="card stats-card border-0 h-100">
                                 <div class="card-body text-center">
                                     <div class="stats-icon bg-primary mx-auto mb-3">
@@ -314,23 +314,17 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                                     </div>
                                     <div class="row align-items-center">
                                         <div class="col">
-                                            <h3 class="fw-bold text-primary mb-1">24</h3>
+                                            <h3 class="fw-bold text-primary mb-1">0</h3>
                                             <p class="text-muted mb-0 small">My Notes</p>
-                                        </div>
-                                        <div class="col-auto">
-                                            <div class="text-success">
-                                                <i class="bi bi-arrow-up"></i>
-                                                <small>+12%</small>
-                                            </div>
                                         </div>
                                     </div>
                                     <div class="progress mt-2" style="height: 4px;">
-                                        <div class="progress-bar bg-primary" style="width: 75%"></div>
+                                        <div class="progress-bar bg-primary" style="width: 0%"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-xl-3 col-md-6">
+                        <div class="col-md-6">
                             <div class="card stats-card border-0 h-100">
                                 <div class="card-body text-center">
                                     <div class="stats-icon bg-success mx-auto mb-3">
@@ -338,66 +332,12 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                                     </div>
                                     <div class="row align-items-center">
                                         <div class="col">
-                                            <h3 class="fw-bold text-success mb-1">12</h3>
-                                            <p class="text-muted mb-0 small">Shared with Me</p>
-                                        </div>
-                                        <div class="col-auto">
-                                            <div class="text-success">
-                                                <i class="bi bi-arrow-up"></i>
-                                                <small>+8%</small>
-                                            </div>
+                                            <h3 class="fw-bold text-success mb-1">0</h3>
+                                            <p class="text-muted mb-0 small">Shared Notes</p>
                                         </div>
                                     </div>
                                     <div class="progress mt-2" style="height: 4px;">
-                                        <div class="progress-bar bg-success" style="width: 60%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-md-6">
-                            <div class="card stats-card border-0 h-100">
-                                <div class="card-body text-center">
-                                    <div class="stats-icon bg-warning mx-auto mb-3">
-                                        <i class="bi bi-heart"></i>
-                                    </div>
-                                    <div class="row align-items-center">
-                                        <div class="col">
-                                            <h3 class="fw-bold text-warning mb-1">8</h3>
-                                            <p class="text-muted mb-0 small">Favorites</p>
-                                        </div>
-                                        <div class="col-auto">
-                                            <div class="text-danger">
-                                                <i class="bi bi-arrow-down"></i>
-                                                <small>-2%</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="progress mt-2" style="height: 4px;">
-                                        <div class="progress-bar bg-warning" style="width: 40%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-md-6">
-                            <div class="card stats-card border-0 h-100">
-                                <div class="card-body text-center">
-                                    <div class="stats-icon bg-info mx-auto mb-3">
-                                        <i class="bi bi-people"></i>
-                                    </div>
-                                    <div class="row align-items-center">
-                                        <div class="col">
-                                            <h3 class="fw-bold text-info mb-1">156</h3>
-                                            <p class="text-muted mb-0 small">Collaborators</p>
-                                        </div>
-                                        <div class="col-auto">
-                                            <div class="text-success">
-                                                <i class="bi bi-arrow-up"></i>
-                                                <small>+25%</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="progress mt-2" style="height: 4px;">
-                                        <div class="progress-bar bg-info" style="width: 85%"></div>
+                                        <div class="progress-bar bg-success" style="width: 0%"></div>
                                     </div>
                                 </div>
                             </div>
