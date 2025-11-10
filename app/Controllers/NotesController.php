@@ -133,6 +133,35 @@ class NotesController {
             return [];
         }
     }
+
+    /**
+     * Search notes (title, content, tags)
+     * Returns public notes and the user's own notes
+     */
+    public function searchNotes($user_id, $query = '', $limit = 20) {
+        try {
+            // Search across title, content, tags, author name and category name
+                $sql = "SELECT n.id, n.title, n.summary, c.name as category_name, u.full_name as author_name, n.updated_at
+                        FROM notes n
+                        LEFT JOIN categories c ON n.category_id = c.id
+                        LEFT JOIN users u ON n.user_id = u.id
+                        WHERE (n.is_public = 1 OR n.user_id = :user_id)";
+
+            $params = [':user_id' => $user_id];
+
+            if (!empty($query)) {
+                $sql .= " AND (n.title LIKE :q OR n.content LIKE :q OR n.tags LIKE :q OR u.full_name LIKE :q OR c.name LIKE :q)";
+                $params[':q'] = '%' . $query . '%';
+            }
+
+            $sql .= " ORDER BY n.updated_at DESC LIMIT " . (int)$limit;
+
+            return $this->db->fetchAll($sql, $params);
+        } catch (Exception $e) {
+            error_log("Search Notes Error: " . $e->getMessage());
+            return [];
+        }
+    }
     
     /**
      * Get a single note by ID
@@ -324,17 +353,23 @@ class NotesController {
 }
 
 // Handle AJAX requests
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    $notesController = new NotesController();
-    
-    // Check if user is logged in
-    if (!isset($_SESSION['user_id'])) {
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    // Ensure config is available
+    global $conf;
+
+    $action = $_POST['action'];
+
+    // Allow dev-only unauthenticated search when explicitly enabled in config
+    $devAllow = isset($conf['dev_allow_unauth_search']) && $conf['dev_allow_unauth_search'];
+
+    // If user not logged in and action is not allowed by dev flag, block
+    if (!isset($_SESSION['user_id']) && !($devAllow && $action === 'search')) {
         echo json_encode(['success' => false, 'message' => 'User not logged in']);
         exit;
     }
-    
-    $action = $_POST['action'];
-    $user_id = $_SESSION['user_id'];
+
+    $notesController = new NotesController();
+    $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
     
     switch ($action) {
         case 'create':
@@ -377,6 +412,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $note_id = $_POST['note_id'] ?? 0;
             $result = $notesController->deleteNote($note_id, $user_id);
             echo json_encode(['success' => $result, 'message' => $result ? 'Note deleted successfully!' : 'Failed to delete note']);
+            break;
+
+        case 'search':
+            // Search notes (title, content, tags, author, category) - returns user's notes + public notes
+                header('Content-Type: application/json');
+                $q = isset($_POST['q']) ? trim($_POST['q']) : '';
+                $limit = isset($_POST['limit']) ? (int)$_POST['limit'] : 20;
+                $limit = max(1, min(50, $limit));
+
+                // Enforce min query length server-side
+                if ($q !== '' && mb_strlen($q) < 2) {
+                    echo json_encode(['success' => false, 'message' => 'Query too short', 'results' => []]);
+                    exit;
+                }
+
+                $results = $notesController->searchNotes($user_id, $q, $limit);
+                echo json_encode(['success' => true, 'results' => $results]);
             break;
             
         default:
