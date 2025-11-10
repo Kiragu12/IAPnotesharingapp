@@ -22,7 +22,7 @@ class forms{
     <input type="password" class="form-control" id="password" placeholder="Enter your password" name="password" value="<?php echo isset($_SESSION['password']) ? $_SESSION['password'] : ''; ?>" required>
     <?php if(isset($err['password_error'])) { ?><div id="passwordHelp" class="alert alert-danger" role="alert"><?php echo $err['password_error']; ?></div><?php } ?>
   </div>
-      <?php $this->submit_button('Sign Up', 'signup'); ?> <a href='signin.php'>Already have an account? Login</a>
+      <?php $this->submit_button('Sign Up', 'signup'); ?> <a href='../auth/signin.php'>Already have an account? Login</a>
 </form>
 
 <?php
@@ -33,19 +33,29 @@ class forms{
 <?php
     }
     public function signin($conf, $ObjFncs){
+      $err = $ObjFncs->getMsg('errors');
+      print $ObjFncs->getMsg('msg');
 ?>
 <h2>Sign In Here</h2>
-<form>
+<form action="" method="post" autocomplete="off">
   <div class="mb-3">
-    <label for="exampleInputEmail1" class="form-label">Email address</label>
-    <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp">
-    <div id="emailHelp" class="form-text"></div>
+    <label for="email" class="form-label">Email address</label>
+    <input type="email" class="form-control" id="email" name="email" aria-describedby="emailHelp" placeholder="Enter your email" value="<?php echo isset($_SESSION['email']) ? $_SESSION['email'] : ''; ?>" required>
+    <?php if(isset($err['email_error'])) { ?><div id="emailHelp" class="alert alert-danger" role="alert"><?php echo $err['email_error']; ?></div><?php } ?>
   </div>
   <div class="mb-3">
-    <label for="exampleInputPassword1" class="form-label">Password</label>
-    <input type="password" class="form-control" id="exampleInputPassword1">
+    <label for="password" class="form-label">Password</label>
+    <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
+    <?php if(isset($err['password_error'])) { ?><div id="passwordHelp" class="alert alert-danger" role="alert"><?php echo $err['password_error']; ?></div><?php } ?>
   </div>
-    <?php $this->submit_button('Sign In', 'signin'); ?> <a href='signup.php'>Don't have an account? Sign Up</a>
+  <div class="mb-3 d-flex justify-content-between align-items-center">
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" id="remember" name="remember_me">
+      <label class="form-check-label" for="remember">Remember me</label>
+    </div>
+    <a href="forgot_password.php" class="text-decoration-none">Forgot Password?</a>
+  </div>
+    <?php $this->submit_button('Sign In', 'signin'); ?> <a href='../auth/signup.php'>Don't have an account? Sign Up</a>
 </form>
 <?php
     }
