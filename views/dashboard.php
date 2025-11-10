@@ -13,6 +13,7 @@ if (!$is_logged_in) {
     exit();
 }
 
+
 $user_name = $_SESSION['user_name'] ?? 'User';
 $user_email = $_SESSION['user_email'] ?? '';
 $user_id = $_SESSION['user_id'];
@@ -253,6 +254,12 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                                 <i class="bi bi-share me-2"></i>Shared Notes
                             </button>
                         </li>
+                        <li class="nav-item">
+                            <button class="nav-link w-100 text-start border-0" style="background: none;" onclick="navigateTo('settings')">
+                                <i class="bi bi-gear me-2"></i>Settings
+                            </button>
+                        </li>
+                        
                     </ul>
                 </div>
             </div>
