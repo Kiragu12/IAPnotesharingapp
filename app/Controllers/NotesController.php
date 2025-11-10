@@ -4,16 +4,24 @@
  * Handles all note-related operations (CRUD)
  */
 
-session_start();
-require_once '../../config/conf.php';
-require_once '../../app/Services/Global/Database.php';
-require_once '../../app/Services/Global/fncs.php';
-
 class NotesController {
     private $db;
     private $ObjFncs;
     
     public function __construct() {
+        // Avoid starting session if already started
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        // Get the project root directory
+        $project_root = dirname(dirname(__DIR__));
+        
+        // Include required files using project root
+        require_once $project_root . '/config/conf.php';
+        require_once $project_root . '/app/Services/Global/Database.php';
+        require_once $project_root . '/app/Services/Global/fncs.php';
+        
         global $conf;
         $this->db = new Database($conf);
         $this->ObjFncs = new fncs();
@@ -23,11 +31,17 @@ class NotesController {
      * Create a new note
      */
     public function createNote($data) {
+        error_log("DEBUG: NotesController::createNote called with data: " . print_r($data, true));
+        
         try {
+            error_log("DEBUG: Starting note creation validation...");
+            
             // Validate required fields
             if (empty($data['title']) || empty($data['content']) || empty($data['user_id'])) {
                 throw new Exception('Title, content, and user ID are required');
             }
+            
+            error_log("DEBUG: Validation passed, sanitizing data...");
             
             // Sanitize input
             $title = trim($data['title']);
@@ -35,12 +49,21 @@ class NotesController {
             $summary = !empty($data['summary']) ? trim($data['summary']) : $this->generateSummary($content);
             $category_id = !empty($data['category_id']) ? (int)$data['category_id'] : null;
             $tags = !empty($data['tags']) ? trim($data['tags']) : '';
-            $is_public = isset($data['is_public']) ? (bool)$data['is_public'] : false;
+            $is_public = isset($data['is_public']) && $data['is_public'] ? 1 : 0; // Convert to integer for MySQL
             $status = !empty($data['status']) ? $data['status'] : 'draft';
             
-            // Insert note into database
-            $sql = "INSERT INTO notes (user_id, category_id, title, content, summary, tags, is_public, status, created_at, updated_at) 
-                    VALUES (:user_id, :category_id, :title, :content, :summary, :tags, :is_public, :status, NOW(), NOW())";
+            // Handle file upload fields
+            $note_type = !empty($data['note_type']) ? $data['note_type'] : 'text';
+            $file_path = !empty($data['file_path']) ? $data['file_path'] : null;
+            $file_name = !empty($data['file_name']) ? $data['file_name'] : null;
+            $file_type = !empty($data['file_type']) ? $data['file_type'] : null;
+            $file_size = !empty($data['file_size']) ? (int)$data['file_size'] : null;
+            
+            error_log("DEBUG: Data sanitized. Note type: $note_type. Preparing SQL query...");
+            
+            // Insert note into database with file support
+            $sql = "INSERT INTO notes (user_id, category_id, title, content, summary, tags, is_public, status, note_type, file_path, file_name, file_type, file_size, created_at, updated_at) 
+                    VALUES (:user_id, :category_id, :title, :content, :summary, :tags, :is_public, :status, :note_type, :file_path, :file_name, :file_type, :file_size, NOW(), NOW())";
             
             $params = [
                 ':user_id' => $data['user_id'],
@@ -50,22 +73,31 @@ class NotesController {
                 ':summary' => $summary,
                 ':tags' => $tags,
                 ':is_public' => $is_public,
-                ':status' => $status
+                ':status' => $status,
+                ':note_type' => $note_type,
+                ':file_path' => $file_path,
+                ':file_name' => $file_name,
+                ':file_type' => $file_type,
+                ':file_size' => $file_size
             ];
             
-            $result = $this->db->execute($sql, $params);
+            error_log("DEBUG: Executing SQL with params: " . print_r($params, true));
+            
+            $result = $this->db->query($sql, $params);
             
             if ($result) {
-                $note_id = $this->db->getLastInsertId();
-                $this->ObjFncs->setMsg('success', 'Note created successfully!');
+                $note_id = $this->db->getPDO()->lastInsertId();
+                error_log("DEBUG: Note created successfully with ID: " . $note_id);
+                $this->ObjFncs->setMsg('success', 'Note created successfully!', 'success');
                 return $note_id;
             } else {
+                error_log("DEBUG: Database execute returned false");
                 throw new Exception('Failed to create note');
             }
             
         } catch (Exception $e) {
             error_log("Note Creation Error: " . $e->getMessage());
-            $this->ObjFncs->setMsg('errors', $e->getMessage());
+            $this->ObjFncs->setMsg('errors', $e->getMessage(), 'danger');
             return false;
         }
     }
@@ -209,7 +241,7 @@ class NotesController {
             $result = $this->db->execute($sql, $params);
             
             if ($result) {
-                $this->ObjFncs->setMsg('success', 'Note updated successfully!');
+                $this->ObjFncs->setMsg('success', 'Note updated successfully!', 'success');
                 return true;
             } else {
                 throw new Exception('Failed to update note');
@@ -217,7 +249,7 @@ class NotesController {
             
         } catch (Exception $e) {
             error_log("Update Note Error: " . $e->getMessage());
-            $this->ObjFncs->setMsg('errors', $e->getMessage());
+            $this->ObjFncs->setMsg('errors', $e->getMessage(), 'danger');
             return false;
         }
     }
@@ -241,7 +273,7 @@ class NotesController {
             $result = $this->db->execute($sql, [':note_id' => $note_id, ':user_id' => $user_id]);
             
             if ($result) {
-                $this->ObjFncs->setMsg('success', 'Note deleted successfully!');
+                $this->ObjFncs->setMsg('success', 'Note deleted successfully!', 'success');
                 return true;
             } else {
                 throw new Exception('Failed to delete note');
@@ -249,7 +281,7 @@ class NotesController {
             
         } catch (Exception $e) {
             error_log("Delete Note Error: " . $e->getMessage());
-            $this->ObjFncs->setMsg('errors', $e->getMessage());
+            $this->ObjFncs->setMsg('errors', $e->getMessage(), 'danger');
             return false;
         }
     }

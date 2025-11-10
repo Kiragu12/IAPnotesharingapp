@@ -1,113 +1,199 @@
 <?php
 /**
- * View Single Note Page
+ * Individual Note Viewing Page
  */
 
 session_start();
 
-// Check if note ID is provided
-if (!isset($_GET['id'])) {
-    header('Location: ../auth/dashboard.php');
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ../auth/signin.php');
     exit();
 }
-
-$note_id = (int)$_GET['id'];
 
 require_once '../../config/conf.php';
-require_once '../../app/Controllers/NotesController.php';
+require_once '../../app/Services/Global/Database.php';
 require_once '../../app/Services/Global/fncs.php';
 
-$notesController = new NotesController();
 $ObjFncs = new fncs();
+$db = new Database($conf);
 
-// Get the note
-$user_id = $_SESSION['user_id'] ?? null;
-$note = $notesController->getNote($note_id, $user_id);
-
-if (!$note) {
-    header('Location: ../auth/dashboard.php?error=note_not_found');
+// Get note ID from URL
+$note_id = $_GET['id'] ?? null;
+if (!$note_id || !is_numeric($note_id)) {
+    header('Location: ../shared-notes.php');
     exit();
 }
 
-// Check if user owns this note
-$is_owner = $user_id && $note['user_id'] == $user_id;
-$user_name = $_SESSION['full_name'] ?? 'Guest';
+// Get current user info
+$user_id = $_SESSION['user_id'];
+$user_name = $_SESSION['user_name'] ?? 'User';
+
+// Get note details
+try {
+    $sql = "SELECT notes.*, users.full_name, users.email
+            FROM notes 
+            LEFT JOIN users ON notes.user_id = users.id 
+            WHERE notes.id = :note_id AND (notes.is_public = 1 OR notes.user_id = :user_id)";
+    
+    $note = $db->fetchOne($sql, [':note_id' => $note_id, ':user_id' => $user_id]);
+    
+    if (!$note) {
+        header('Location: ../shared-notes.php?error=note_not_found');
+        exit();
+    }
+    
+} catch (Exception $e) {
+    error_log("Error fetching note: " . $e->getMessage());
+    header('Location: ../shared-notes.php?error=database_error');
+    exit();
+}
+
+// Get messages
+$success_msg = $ObjFncs->getMsg('success');
+$error_msg = $ObjFncs->getMsg('errors');
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($note['title']); ?> - <?php echo htmlspecialchars($conf['site_name']); ?></title>
+    <title><?php echo htmlspecialchars($note['title']); ?> - NotesShare Academy</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
         }
+        
         .navbar {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         }
-        .card {
+        
+        .main-card {
+            background: white;
+            border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+            overflow: hidden;
             border: none;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         }
+        
         .note-header {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            padding: 40px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .note-type-badge {
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .note-type-text {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border-radius: 15px 15px 0 0;
         }
-        .note-content {
-            line-height: 1.8;
-            font-size: 1.1rem;
+        
+        .note-type-file {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
         }
-        .category-badge {
-            background: rgba(102, 126, 234, 0.1);
-            color: #667eea;
-            padding: 0.25rem 0.75rem;
-            border-radius: 50px;
-            font-size: 0.875rem;
-            border: 1px solid rgba(102, 126, 234, 0.2);
-        }
-        .tag-badge {
-            background: rgba(118, 75, 162, 0.1);
-            color: #764ba2;
-            padding: 0.25rem 0.5rem;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            margin: 0.1rem;
-            display: inline-block;
-        }
-        .author-info {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            border-radius: 10px;
-            padding: 1rem;
-        }
-        .stat-item {
-            text-align: center;
-            padding: 0.5rem;
-        }
-        .stat-value {
-            font-size: 1.25rem;
+        
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
             font-weight: bold;
-            color: #667eea;
+            font-size: 24px;
         }
-        .stat-label {
-            font-size: 0.875rem;
-            color: #6c757d;
+        
+        .file-preview {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin: 30px 0;
         }
-        .btn-action {
-            border-radius: 10px;
-            padding: 0.5rem 1rem;
+        
+        .file-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            display: block;
         }
-        .note-meta {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9rem;
+        
+        .pdf-icon { color: #dc3545; }
+        .doc-icon { color: #0d6efd; }
+        .img-icon { color: #198754; }
+        .xlsx-icon { color: #fd7e14; }
+        .ppt-icon { color: #e83e8c; }
+        .default-icon { color: #6c757d; }
+        
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-weight: 600;
+            padding: 12px 30px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            color: white;
+        }
+        
+        .download-btn {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-weight: 600;
+            padding: 12px 30px;
+            transition: all 0.3s ease;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(17, 153, 142, 0.4);
+            color: white;
+        }
+        
+        .content-section {
+            padding: 40px;
+            line-height: 1.8;
+        }
+        
+        .back-btn {
+            background: #6c757d;
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-weight: 600;
+            padding: 12px 30px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .back-btn:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(108, 117, 125, 0.3);
+            color: white;
         }
     </style>
 </head>
@@ -115,261 +201,212 @@ $user_name = $_SESSION['full_name'] ?? 'Guest';
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="../auth/dashboard.php">
-                <i class="bi bi-journal-bookmark me-2"></i><?php echo htmlspecialchars($conf['site_name']); ?>
+            <a class="navbar-brand fw-bold" href="../dashboard.php">
+                <i class="bi bi-journal-text me-2"></i>NotesShare Academy
             </a>
-            <div class="navbar-nav ms-auto">
-                <?php if ($user_id): ?>
-                    <a class="nav-link" href="create.php">
-                        <i class="bi bi-plus-circle me-1"></i>Create Note
-                    </a>
-                    <a class="nav-link" href="my-notes.php">
-                        <i class="bi bi-journals me-1"></i>My Notes
-                    </a>
-                    <a class="nav-link" href="../auth/dashboard.php">
-                        <i class="bi bi-speedometer2 me-1"></i>Dashboard
-                    </a>
-                    <a class="nav-link" href="../logout.php">
-                        <i class="bi bi-box-arrow-right me-1"></i>Logout
-                    </a>
-                <?php else: ?>
-                    <a class="nav-link" href="../auth/signin.php">
-                        <i class="bi bi-box-arrow-in-right me-1"></i>Sign In
-                    </a>
-                    <a class="nav-link" href="../auth/signup.php">
-                        <i class="bi bi-person-plus me-1"></i>Sign Up
-                    </a>
-                <?php endif; ?>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../dashboard.php">
+                            <i class="bi bi-house-door me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../shared-notes.php">
+                            <i class="bi bi-share me-1"></i>Shared Notes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="create.php">
+                            <i class="bi bi-plus-circle me-1"></i>Create Note
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="my-notes.php">
+                            <i class="bi bi-folder me-1"></i>My Notes
+                        </a>
+                    </li>
+                </ul>
+                <div class="navbar-nav">
+                    <span class="navbar-text me-3">Welcome, <?php echo htmlspecialchars($user_name); ?>!</span>
+                </div>
             </div>
         </div>
     </nav>
 
-    <div class="container mt-4">
-        <div class="row">
-            <!-- Main Content -->
-            <div class="col-lg-8">
-                <!-- Note Card -->
-                <div class="card mb-4">
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                
+                <!-- Back Button -->
+                <div class="mb-4">
+                    <a href="../shared-notes.php" class="back-btn">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Shared Notes
+                    </a>
+                </div>
+                
+                <!-- Main Note Card -->
+                <div class="main-card">
+                    
                     <!-- Note Header -->
-                    <div class="note-header p-4">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <h1 class="mb-3"><?php echo htmlspecialchars($note['title']); ?></h1>
-                                
-                                <!-- Meta Information -->
-                                <div class="note-meta mb-3">
-                                    <i class="bi bi-person me-1"></i>By <?php echo htmlspecialchars($note['author_name']); ?>
-                                    <span class="mx-2">•</span>
-                                    <i class="bi bi-calendar me-1"></i><?php echo date('M j, Y', strtotime($note['created_at'])); ?>
-                                    <?php if ($note['created_at'] !== $note['updated_at']): ?>
-                                        <span class="mx-2">•</span>
-                                        <i class="bi bi-pencil me-1"></i>Updated <?php echo date('M j, Y', strtotime($note['updated_at'])); ?>
-                                    <?php endif; ?>
-                                </div>
-
-                                <!-- Category and Status -->
-                                <div class="d-flex flex-wrap gap-2">
-                                    <?php if ($note['category_name']): ?>
-                                        <span class="category-badge">
-                                            <i class="bi bi-folder me-1"></i><?php echo htmlspecialchars($note['category_name']); ?>
-                                        </span>
-                                    <?php endif; ?>
-                                    
-                                    <span class="badge bg-light text-dark">
-                                        <i class="bi bi-eye me-1"></i><?php echo $note['status']; ?>
+                    <div class="note-header">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center mb-3">
+                                    <span class="note-type-badge note-type-<?php echo $note['note_type'] ?? 'text'; ?> me-3">
+                                        <?php if (($note['note_type'] ?? 'text') === 'file'): ?>
+                                            <i class="bi bi-file-earmark me-1"></i>File
+                                        <?php else: ?>
+                                            <i class="bi bi-file-text me-1"></i>Text
+                                        <?php endif; ?>
                                     </span>
-                                    
                                     <?php if ($note['is_public']): ?>
-                                        <span class="badge bg-success">
-                                            <i class="bi bi-globe me-1"></i>Public
-                                        </span>
+                                        <span class="badge bg-success">Public</span>
                                     <?php else: ?>
-                                        <span class="badge bg-warning text-dark">
-                                            <i class="bi bi-lock me-1"></i>Private
-                                        </span>
+                                        <span class="badge bg-warning text-dark">Private</span>
                                     <?php endif; ?>
                                 </div>
+                                
+                                <h1 class="display-6 fw-bold text-dark mb-3">
+                                    <?php echo htmlspecialchars($note['title']); ?>
+                                </h1>
+                                
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar me-3">
+                                        <?php echo strtoupper(substr($note['full_name'], 0, 1)); ?>
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold mb-1"><?php echo htmlspecialchars($note['full_name']); ?></h6>
+                                        <p class="text-muted mb-0">
+                                            Created on <?php echo date('F j, Y \a\t g:i A', strtotime($note['created_at'])); ?>
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
+                            
+                            <div class="col-md-4 text-end">
+                                <?php if (($note['note_type'] ?? 'text') === 'file' && !empty($note['file_path'])): ?>
+                                    <a href="../../<?php echo htmlspecialchars($note['file_path']); ?>" 
+                                       class="btn download-btn mb-2 d-block"
+                                       target="_blank"
+                                       download="<?php echo htmlspecialchars($note['file_name'] ?? 'download'); ?>">
+                                        <i class="bi bi-download me-2"></i>Download File
+                                    </a>
+                                    <small class="text-muted">
+                                        <?php echo !empty($note['file_size']) ? number_format($note['file_size'] / 1024, 1) . ' KB' : 'File size unknown'; ?>
+                                    </small>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
 
-                            <!-- Action Buttons for Owner -->
-                            <?php if ($is_owner): ?>
-                                <div class="dropdown">
-                                    <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                        <i class="bi bi-three-dots"></i>
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="edit.php?id=<?php echo $note['id']; ?>">
-                                            <i class="bi bi-pencil me-2"></i>Edit Note
-                                        </a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item text-danger" href="#" onclick="confirmDelete(<?php echo $note['id']; ?>)">
-                                            <i class="bi bi-trash me-2"></i>Delete Note
-                                        </a></li>
-                                    </ul>
+                    <!-- File Preview Section (for files) -->
+                    <?php if (($note['note_type'] ?? 'text') === 'file'): ?>
+                        <div class="file-preview">
+                            <?php
+                            $file_name = $note['file_name'] ?? 'unknown_file';
+                            $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+                            $icon_class = 'default-icon';
+                            $icon = 'bi-file-earmark';
+                            
+                            switch ($file_ext) {
+                                case 'pdf':
+                                    $icon_class = 'pdf-icon';
+                                    $icon = 'bi-file-earmark-pdf-fill';
+                                    break;
+                                case 'doc':
+                                case 'docx':
+                                    $icon_class = 'doc-icon';
+                                    $icon = 'bi-file-earmark-word-fill';
+                                    break;
+                                case 'jpg':
+                                case 'jpeg':
+                                case 'png':
+                                case 'gif':
+                                    $icon_class = 'img-icon';
+                                    $icon = 'bi-file-earmark-image-fill';
+                                    break;
+                                case 'xlsx':
+                                case 'xls':
+                                    $icon_class = 'xlsx-icon';
+                                    $icon = 'bi-file-earmark-excel-fill';
+                                    break;
+                                case 'ppt':
+                                case 'pptx':
+                                    $icon_class = 'ppt-icon';
+                                    $icon = 'bi-file-earmark-ppt-fill';
+                                    break;
+                            }
+                            ?>
+                            <i class="bi <?php echo $icon; ?> file-icon <?php echo $icon_class; ?>"></i>
+                            <h4 class="fw-bold"><?php echo htmlspecialchars($file_name); ?></h4>
+                            <p class="text-muted">Click the download button above to view or save this file</p>
+                            
+                            <!-- Image Preview for image files -->
+                            <?php if (in_array($file_ext, ['jpg', 'jpeg', 'png', 'gif']) && !empty($note['file_path']) && file_exists('../../' . $note['file_path'])): ?>
+                                <div class="mt-4">
+                                    <img src="../../<?php echo htmlspecialchars($note['file_path']); ?>" 
+                                         alt="<?php echo htmlspecialchars($file_name); ?>"
+                                         class="img-fluid rounded shadow"
+                                         style="max-height: 400px;">
                                 </div>
                             <?php endif; ?>
                         </div>
-                    </div>
-
-                    <!-- Note Body -->
-                    <div class="card-body p-4">
-                        <!-- Summary (if different from content start) -->
-                        <?php if ($note['summary'] && strlen($note['summary']) < strlen($note['content'])): ?>
-                            <div class="alert alert-info">
-                                <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Summary</h6>
-                                <p class="mb-0"><?php echo htmlspecialchars($note['summary']); ?></p>
+                    <?php endif; ?>
+                    
+                    <!-- Content Section -->
+                    <div class="content-section">
+                        <?php if (($note['note_type'] ?? 'text') === 'text' || !empty($note['content'])): ?>
+                            <h5 class="fw-bold mb-3">
+                                <?php echo (($note['note_type'] ?? 'text') === 'file') ? 'Description' : 'Content'; ?>
+                            </h5>
+                            <div class="fs-6 text-dark">
+                                <?php echo nl2br(htmlspecialchars($note['content'])); ?>
                             </div>
                         <?php endif; ?>
-
-                        <!-- Main Content -->
-                        <div class="note-content">
-                            <?php echo nl2br(htmlspecialchars($note['content'])); ?>
-                        </div>
-
-                        <!-- Tags -->
-                        <?php if ($note['tags']): ?>
-                            <hr class="my-4">
-                            <div>
-                                <h6 class="text-muted mb-2">Tags:</h6>
-                                <?php 
-                                $tags = explode(',', $note['tags']);
-                                foreach ($tags as $tag): 
-                                    $tag = trim($tag);
-                                    if ($tag):
-                                ?>
-                                    <span class="tag-badge"><?php echo htmlspecialchars($tag); ?></span>
-                                <?php 
-                                    endif;
-                                endforeach; 
-                                ?>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sidebar -->
-            <div class="col-lg-4">
-                <!-- Author Info -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h6 class="card-title">
-                            <i class="bi bi-person-circle me-2"></i>Author Information
-                        </h6>
-                        <div class="author-info">
-                            <div class="d-flex align-items-center">
-                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
-                                    <i class="bi bi-person text-white fs-4"></i>
-                                </div>
+                        
+                        <?php if (!empty($note['tags'])): ?>
+                            <div class="mt-4">
+                                <h6 class="fw-bold text-muted mb-2">Tags:</h6>
                                 <div>
-                                    <h6 class="mb-1"><?php echo htmlspecialchars($note['author_name']); ?></h6>
-                                    <small class="text-muted">Note Author</small>
+                                    <?php 
+                                    $tags = explode(',', $note['tags']);
+                                    foreach ($tags as $tag): 
+                                        $tag = trim($tag);
+                                        if (!empty($tag)):
+                                    ?>
+                                        <span class="badge bg-light text-dark me-2 mb-2 px-3 py-2">
+                                            #<?php echo htmlspecialchars($tag); ?>
+                                        </span>
+                                    <?php 
+                                        endif;
+                                    endforeach; 
+                                    ?>
                                 </div>
                             </div>
-                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
-
-                <!-- Note Statistics -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h6 class="card-title">
-                            <i class="bi bi-graph-up me-2"></i>Note Statistics
-                        </h6>
-                        <div class="row text-center">
-                            <div class="col-4 stat-item">
-                                <div class="stat-value"><?php echo number_format($note['view_count']); ?></div>
-                                <div class="stat-label">Views</div>
-                            </div>
-                            <div class="col-4 stat-item">
-                                <div class="stat-value"><?php echo number_format($note['like_count']); ?></div>
-                                <div class="stat-label">Likes</div>
-                            </div>
-                            <div class="col-4 stat-item">
-                                <div class="stat-value"><?php echo number_format($note['share_count']); ?></div>
-                                <div class="stat-label">Shares</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="card">
-                    <div class="card-body">
-                        <h6 class="card-title">
-                            <i class="bi bi-lightning me-2"></i>Quick Actions
-                        </h6>
-                        <div class="d-grid gap-2">
-                            <?php if ($user_id): ?>
-                                <button class="btn btn-outline-primary btn-action">
-                                    <i class="bi bi-heart me-2"></i>Like Note
-                                </button>
-                                <button class="btn btn-outline-secondary btn-action">
-                                    <i class="bi bi-share me-2"></i>Share Note
-                                </button>
-                                <a href="create.php" class="btn btn-primary btn-action">
-                                    <i class="bi bi-plus-circle me-2"></i>Create New Note
-                                </a>
-                            <?php else: ?>
-                                <a href="../auth/signin.php" class="btn btn-primary btn-action">
-                                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In to Interact
-                                </a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+                
+                <!-- Action Buttons -->
+                <div class="text-center mt-4">
+                    <a href="../shared-notes.php" class="btn btn-gradient me-3">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Gallery
+                    </a>
+                    
+                    <?php if ($note['user_id'] == $user_id): ?>
+                        <a href="edit.php?id=<?php echo $note['id']; ?>" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil me-2"></i>Edit Note
+                        </a>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function confirmDelete(noteId) {
-            if (confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
-                // Create a form to submit the delete request
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '../../app/Controllers/NotesController.php';
-                
-                const actionInput = document.createElement('input');
-                actionInput.type = 'hidden';
-                actionInput.name = 'action';
-                actionInput.value = 'delete';
-                
-                const noteIdInput = document.createElement('input');
-                noteIdInput.type = 'hidden';
-                noteIdInput.name = 'note_id';
-                noteIdInput.value = noteId;
-                
-                form.appendChild(actionInput);
-                form.appendChild(noteIdInput);
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
-
-        // Like note functionality (placeholder)
-        document.querySelector('.btn-outline-primary')?.addEventListener('click', function() {
-            // TODO: Implement like functionality
-            alert('Like functionality coming soon!');
-        });
-
-        // Share note functionality (placeholder)
-        document.querySelector('.btn-outline-secondary')?.addEventListener('click', function() {
-            // TODO: Implement share functionality
-            if (navigator.share) {
-                navigator.share({
-                    title: '<?php echo addslashes($note['title']); ?>',
-                    text: '<?php echo addslashes($note['summary'] ?: substr($note['content'], 0, 100)); ?>',
-                    url: window.location.href
-                });
-            } else {
-                // Fallback: copy URL to clipboard
-                navigator.clipboard.writeText(window.location.href).then(() => {
-                    alert('Note URL copied to clipboard!');
-                });
-            }
-        });
-    </script>
 </body>
 </html>

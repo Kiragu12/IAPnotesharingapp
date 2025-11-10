@@ -6,10 +6,13 @@ A secure web application for sharing notes with advanced authentication features
 
 - **User Registration & Authentication**: Secure signup and signin process
 - **Two-Factor Authentication (2FA)**: Email-based OTP verification for enhanced security
-- **Notes Management**: Create, edit, view, and organize personal notes
+- **Enhanced Notes Management**: Create, edit, view, and organize both text notes and file uploads
+- **File Upload Support**: Upload documents (PDF, DOC, DOCX), images (JPG, PNG, GIF), and spreadsheets (XLS, XLSX)
+- **Dual Note Types**: Text notes with rich content or file uploads with descriptions
 - **Categories & Tags**: Organize notes with categories and tags for easy discovery
 - **Public/Private Notes**: Share notes publicly or keep them private
 - **Search & Filter**: Find notes quickly with search and category filters
+- **Drag & Drop Upload**: Modern file upload interface with drag-and-drop support
 - **Session Management**: Secure session handling with logout functionality
 - **Responsive Design**: Bootstrap-based UI that works on all devices
 - **Email Integration**: PHPMailer for sending OTP codes and notifications
@@ -30,7 +33,10 @@ The application uses the following main tables:
 - `two_factor_codes` - 2FA verification codes
 - `remember_tokens` - Remember me functionality
 - `password_resets` - Password reset tokens
-- `notes` - User notes and content
+- `notes` - Enhanced table supporting both text notes and file uploads
+  - Text fields: `title`, `content`, `summary`, `tags`
+  - File fields: `file_path`, `file_name`, `file_type`, `file_size`
+  - Type field: `note_type` (text/file)
 - `categories` - Note categories and organization
 
 ## 📁 Project Structure
@@ -38,14 +44,19 @@ The application uses the following main tables:
 ```
 IAPnotesharingapp/
 ├── app/
+│   ├── Controllers/            # Application controllers (Notes, etc.)
 │   ├── Controllers/Proc/       # Authentication logic
 │   └── Services/Global/        # Core services (Database, SendMail, etc.)
 ├── config/                     # Configuration files
 ├── public/                     # Public assets (CSS, JS, images)
 ├── sql/                        # Database schema and setup
+├── uploads/                    # File upload storage
+│   ├── documents/              # Document uploads (PDF, DOC, etc.)
+│   └── images/                 # Image uploads (JPG, PNG, etc.)
 ├── vendor/                     # Composer dependencies
 ├── views/                      # Frontend templates
 │   ├── auth/                   # Authentication pages
+│   ├── notes/                  # Notes management pages
 │   └── index.php               # Homepage
 ├── composer.json               # Dependencies
 ├── debug.log                   # Application logs
@@ -84,7 +95,7 @@ http://localhost/IAPnotesharingapp/views/auth/signin.php
 
 ### 4. Two-Factor Authentication
 ```
-http://localhost/IAPnotesharingapp/views/auth/verify.php
+http://localhost/IAPnotesharingapp/views/auth/two_factor_auth_new.php
 ```
 - **Purpose**: OTP verification for secure login
 - **Process**: Enter 6-digit code from email → Verify → Dashboard access
@@ -93,7 +104,7 @@ http://localhost/IAPnotesharingapp/views/auth/verify.php
 
 ### 5. Dashboard (Protected Area)
 ```
-http://localhost/IAPnotesharingapp/views/auth/dashboard.php
+http://localhost/IAPnotesharingapp/views/dashboard.php
 ```
 - **Purpose**: Main application interface (requires authentication)
 - **Features**: User session display, logout functionality
@@ -117,14 +128,19 @@ http://localhost/IAPnotesharingapp/views/logout.php
 - **Process**: Clear session → Clear remember tokens → Redirect to home
 - **Expected**: Successful logout message and redirect to homepage
 
-### 8. Create Note
+### 8. Create Note (Enhanced with File Upload)
 ```
 http://localhost/IAPnotesharingapp/views/notes/create.php
 ```
-- **Purpose**: Create new notes with rich content
-- **Features**: Title, content, categories, tags, public/private settings
+- **Purpose**: Create text notes OR upload files with descriptions
+- **Features**: 
+  - **Text Notes**: Rich content writing with summary
+  - **File Upload**: Drag-and-drop upload for documents, PDFs, images
+  - Categories, tags, public/private settings for both note types
+- **Supported Files**: PDF, DOC, DOCX, TXT, JPG, PNG, GIF, XLS, XLSX, PPT, PPTX
+- **File Limit**: 10MB maximum per file
 - **Access**: Requires authentication
-- **Expected**: Note creation form with all fields
+- **Expected**: Dual-mode interface with note type selection
 
 ### 9. My Notes
 ```
@@ -164,12 +180,12 @@ http://localhost/IAPnotesharingapp/views/notes/view.php?id=1
    - Submit and verify 2FA initiation message
 
 4. **Complete 2FA Verification**
-   - URL: `http://localhost/IAPnotesharingapp/views/auth/verify.php`
+   - URL: `http://localhost/IAPnotesharingapp/views/auth/two_factor_auth_new.php`
    - Check email for 6-digit OTP code
    - Enter code and verify successful login
 
 5. **Access Dashboard**
-   - URL: `http://localhost/IAPnotesharingapp/views/auth/dashboard.php`
+   - URL: `http://localhost/IAPnotesharingapp/views/dashboard.php`
    - Verify user session information
    - Test navigation and features
 
@@ -180,6 +196,31 @@ http://localhost/IAPnotesharingapp/views/notes/view.php?id=1
 7. **Verify Security**
    - Try accessing dashboard after logout (should redirect to signin)
    - Test "Back to Home" buttons on all auth pages
+
+### Step-by-Step Notes Testing:
+
+8. **Create Your First Note**
+   - URL: `http://localhost/IAPnotesharingapp/views/notes/create.php`
+   - **Choose Note Type**: Text Note or File Upload
+   - **For Text Notes**: Fill in title and content (required fields)
+   - **For File Upload**: Upload file and provide description (required fields)
+   - Select a category (optional)
+   - Add tags (optional)
+   - Choose public/private setting
+   - Click "Create Note"
+   - **Expected**: Success message and note creation confirmation
+
+9. **View Your Notes**
+   - URL: `http://localhost/IAPnotesharingapp/views/notes/my-notes.php`
+   - **Expected**: See your created note in the grid
+   - Test search functionality
+   - Test filter options (All/Published/Drafts)
+
+10. **Edit a Note**
+    - Click on a note from "My Notes"
+    - Click "Edit" from the dropdown menu
+    - Modify content and save
+    - **Expected**: See "Note updated successfully" message
 
 ## 🛠️ Installation & Setup
 
@@ -255,6 +296,6 @@ For issues or questions:
 
 ---
 
-**Status**: ✅ Production Ready  
-**Last Updated**: October 27, 2025  
-**Architecture**: PHP MVC with Bootstrap Frontend
+**Status**: ✅ Production Ready with Enhanced File Upload Support  
+**Last Updated**: November 10, 2025  
+**Architecture**: PHP MVC with Bootstrap Frontend and File Upload System

@@ -1,9 +1,9 @@
 <?php
-// Start session
+// Start session FIRST
 session_start();
 
 // Load core config and services needed for signin processing
-require_once '../../conf.php';
+require_once '../../config/conf.php';
 require_once '../../config/Lang/en.php';
 require_once '../../app/Services/Global/Database.php';
 require_once '../../app/Services/Global/fncs.php';
@@ -16,23 +16,24 @@ $ObjSendMail = new SendMail();
 $ObjAuth = new auth();
 $db = new Database($conf);
 
+// Debug logging for signin.php
+$debug_log = __DIR__ . '/../../debug.log';
+error_log("DEBUG: signin.php accessed - Method: " . ($_SERVER['REQUEST_METHOD'] ?? 'NOT SET') . " - " . date('Y-m-d H:i:s'), 3, $debug_log);
+
 // Redirect to dashboard if already logged in (but not from auto-login)
 if (isset($_SESSION['user_id']) && !isset($_SESSION['auto_login'])) {
     header('Location: ../dashboard.php');
     exit();
 }
 
-// Debug logging for signin.php
-$debug_log = __DIR__ . '/../../debug.log';
-error_log("DEBUG: signin.php accessed - Method: " . ($_SERVER['REQUEST_METHOD'] ?? 'NOT SET') . " - " . date('Y-m-d H:i:s'), 3, $debug_log);
-
-if (!empty($_POST)) {
-    error_log("DEBUG: POST data in signin.php: " . print_r($_POST, true), 3, $debug_log);
-}
-
-// Process login BEFORE any HTML output
+// CRITICAL: Process login BEFORE any HTML output
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
     error_log("DEBUG: About to call login function from signin.php", 3, $debug_log);
+    
+    if (!empty($_POST)) {
+        error_log("DEBUG: POST data in signin.php: " . print_r($_POST, true), 3, $debug_log);
+    }
+    
     require_once '../../config/ClassAutoLoad.php';
     // This will redirect to two_factor_auth.php if successful
     $ObjAuth->login($conf, $ObjFncs, $ObjSendMail);

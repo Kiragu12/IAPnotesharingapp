@@ -280,7 +280,7 @@ class auth{
                     
                     // Always redirect to 2FA page (even if email fails)
                     error_log("DEBUG: Redirecting to 2FA verification page", 3, $debug_log);
-                    header('Location: ../../views/auth/two_factor_auth_new.php');
+                    header('Location: two_factor_auth_new.php');
                     exit();
                 } else {
                     $ObjFncs->setMsg('msg', 'Invalid email or password.', 'danger');

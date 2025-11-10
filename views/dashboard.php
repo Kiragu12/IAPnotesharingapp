@@ -239,19 +239,19 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                 <div class="sidebar">
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link active" href="dashboard.php">
+                            <button class="nav-link active w-100 text-start border-0" style="background: none;" onclick="navigateTo('dashboard')">
                                 <i class="bi bi-house-door me-2"></i>Dashboard
-                            </a>
+                            </button>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="notes/my-notes.php">
+                            <button class="nav-link w-100 text-start border-0" style="background: none;" onclick="navigateTo('my-notes')">
                                 <i class="bi bi-journal-text me-2"></i>My Notes
-                            </a>
+                            </button>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="../discovernotes.php">
+                            <button class="nav-link w-100 text-start border-0" style="background: none;" onclick="navigateTo('shared-notes')">
                                 <i class="bi bi-share me-2"></i>Shared Notes
-                            </a>
+                            </button>
                         </li>
                     </ul>
                 </div>
@@ -293,7 +293,7 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                                     <a href="notes/my-notes.php" class="quick-action-btn">
                                         <i class="bi bi-journals me-2"></i>My Notes
                                     </a>
-                                    <a href="#" class="quick-action-btn">
+                                    <a href="shared-notes.php" class="quick-action-btn">
                                         <i class="bi bi-people me-2"></i>Browse Community
                                     </a>
                                 </div>
@@ -360,9 +360,9 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                                             <span class="visually-hidden">Toggle Dropdown</span>
                                         </button>
                                         <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="#"><i class="bi bi-file-text me-2"></i>Text Note</a></li>
-                                            <li><a class="dropdown-item" href="#"><i class="bi bi-upload me-2"></i>Upload File</a></li>
-                                            <li><a class="dropdown-item" href="#"><i class="bi bi-link me-2"></i>From URL</a></li>
+                                            <li><a class="dropdown-item" href="notes/create.php?type=text"><i class="bi bi-file-text me-2"></i>Text Note</a></li>
+                                            <li><a class="dropdown-item" href="notes/create.php?type=file"><i class="bi bi-upload me-2"></i>Upload File</a></li>
+                                            <li><a class="dropdown-item" href="notes/create.php"><i class="bi bi-plus-circle me-2"></i>New Note</a></li>
                                         </ul>
                                     </div>
                                 </div>
@@ -623,10 +623,39 @@ $welcome_msg = $ObjFncs->getMsg('msg');
     
     <!-- Custom JS -->
     <script>
-        // Sidebar navigation
+        // Navigation function
+        function navigateTo(page) {
+            console.log('Navigating to:', page);
+            
+            // Remove active class from all nav links
+            document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+            
+            switch(page) {
+                case 'dashboard':
+                    // Reload dashboard
+                    window.location.href = 'dashboard.php';
+                    break;
+                case 'my-notes':
+                    // Navigate to my notes
+                    window.location.href = 'notes/my-notes.php';
+                    break;
+                case 'shared-notes':
+                    // Navigate to shared notes
+                    window.location.href = 'shared-notes.php';
+                    break;
+                default:
+                    console.error('Unknown navigation target:', page);
+            }
+        }
+        
+        // Sidebar navigation (legacy support)
         document.querySelectorAll('.sidebar .nav-link').forEach(link => {
             link.addEventListener('click', function(e) {
-                e.preventDefault();
+                console.log('Navigation clicked');
+                // Don't prevent default for buttons
+                if (this.tagName !== 'BUTTON') {
+                    e.preventDefault();
+                }
                 
                 // Remove active class from all links
                 document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));

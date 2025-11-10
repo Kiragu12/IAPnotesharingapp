@@ -4,8 +4,8 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-// Load configuration (conf.php is in root directory)
-require_once __DIR__ . '/../conf.php';
+// Load configuration (conf.php is in config directory)
+require_once __DIR__ . '/conf.php';
 
 // Load language file
 $lang = array();

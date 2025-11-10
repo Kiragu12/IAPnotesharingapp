@@ -1,8 +1,4 @@
 <?php
-/**
- * Create New Note Page
- */
-
 session_start();
 
 // Check if user is logged in
@@ -11,6 +7,10 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+// Simple error checking
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 require_once '../../config/conf.php';
 require_once '../../app/Services/Global/Database.php';
 require_once '../../app/Services/Global/fncs.php';
@@ -18,98 +18,202 @@ require_once '../../app/Services/Global/fncs.php';
 $ObjFncs = new fncs();
 $db = new Database($conf);
 
-// Get categories for dropdown
+// Get user info
+$user_name = $_SESSION['user_name'] ?? 'User';
+$user_id = $_SESSION['user_id'];
+
+// Get categories safely
 try {
     $categories = $db->fetchAll("SELECT * FROM categories ORDER BY name ASC");
 } catch (Exception $e) {
-    $categories = [];
     error_log("Error fetching categories: " . $e->getMessage());
+    $categories = [];
 }
-
-// Get user info
-$user_name = $_SESSION['full_name'] ?? 'User';
 
 // Handle form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_note'])) {
-    require_once '../../app/Controllers/NotesController.php';
-    $notesController = new NotesController();
+$success_message = '';
+$error_message = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $note_type = $_POST['note_type'] ?? 'text';
+    $title = trim($_POST['title'] ?? '');
+    $description = trim($_POST['description'] ?? '');
+    $content = trim($_POST['content'] ?? '');
     
-    $data = [
-        'user_id' => $_SESSION['user_id'],
-        'title' => $_POST['title'] ?? '',
-        'content' => $_POST['content'] ?? '',
-        'summary' => $_POST['summary'] ?? '',
-        'category_id' => !empty($_POST['category_id']) ? (int)$_POST['category_id'] : null,
-        'tags' => $_POST['tags'] ?? '',
-        'is_public' => isset($_POST['is_public']),
-        'status' => $_POST['status'] ?? 'draft'
-    ];
-    
-    $note_id = $notesController->createNote($data);
-    if ($note_id) {
-        // Redirect to view the created note
-        header("Location: view.php?id=$note_id");
-        exit();
+    if (empty($title)) {
+        $error_message = "Please provide a title for your note.";
+    } else {
+        try {
+            require_once '../../app/Controllers/NotesController.php';
+            $notesController = new NotesController();
+            
+            if ($note_type === 'file' && isset($_FILES['uploaded_file']) && $_FILES['uploaded_file']['error'] === UPLOAD_ERR_OK) {
+                // File upload logic
+                $file = $_FILES['uploaded_file'];
+                $allowed_extensions = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif', 'txt'];
+                $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                
+                if (in_array($file_extension, $allowed_extensions) && $file['size'] <= 10*1024*1024) {
+                    $upload_dir = '../../uploads/documents/';
+                    if (!is_dir($upload_dir)) {
+                        mkdir($upload_dir, 0777, true);
+                    }
+                    
+                    $unique_name = uniqid() . '_' . time() . '.' . $file_extension;
+                    $upload_path = $upload_dir . $unique_name;
+                    
+                    if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+                        $data = [
+                            'user_id' => $user_id,
+                            'title' => $title,
+                            'content' => $description ?: 'File upload: ' . $file['name'],
+                            'note_type' => 'file',
+                            'file_path' => 'uploads/documents/' . $unique_name,
+                            'file_name' => $file['name'],
+                            'file_type' => $file['type'],
+                            'file_size' => $file['size'],
+                            'is_public' => isset($_POST['is_public']) ? 1 : 0,
+                            'status' => 'published'
+                        ];
+                        
+                        $note_id = $notesController->createNote($data);
+                        if ($note_id) {
+                            $success_message = "File uploaded successfully!";
+                        } else {
+                            $error_message = "Failed to save note to database.";
+                        }
+                    } else {
+                        $error_message = "Failed to upload file.";
+                    }
+                } else {
+                    $error_message = "Invalid file type or file too large.";
+                }
+            } elseif ($note_type === 'text' && !empty($content)) {
+                // Text note logic
+                $data = [
+                    'user_id' => $user_id,
+                    'title' => $title,
+                    'content' => $content,
+                    'note_type' => 'text',
+                    'is_public' => isset($_POST['is_public']) ? 1 : 0,
+                    'status' => 'published'
+                ];
+                
+                $note_id = $notesController->createNote($data);
+                if ($note_id) {
+                    $success_message = "Text note created successfully!";
+                } else {
+                    $error_message = "Failed to save note to database.";
+                }
+            } else {
+                $error_message = "Please provide content for your note.";
+            }
+            
+        } catch (Exception $e) {
+            error_log("Note creation error: " . $e->getMessage());
+            $error_message = "Error: " . $e->getMessage();
+        }
     }
 }
-
-// Get any messages
-$success_message = $ObjFncs->getMsg('success');
-$error_messages = $ObjFncs->getMsg('errors');
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create New Note - <?php echo htmlspecialchars($conf['site_name']); ?></title>
+    <title>Create Note - NotesShare Academy</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         body {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
         }
+        
         .navbar {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
         }
-        .card {
+        
+        .main-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             border: none;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            overflow: hidden;
         }
+        
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 20px 30px;
+        }
+        
+        .note-type-selector {
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .note-type-selector:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+        
+        .note-type-selector.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #f8f9ff 0%, #e7f1ff 100%);
+        }
+        
+        .file-drop-zone {
+            border: 2px dashed #dee2e6;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
+        .file-drop-zone:hover,
+        .file-drop-zone.dragover {
+            border-color: #667eea;
+            background: #f0f8ff;
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-weight: 500;
+            padding: 12px 30px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            color: white;
+        }
+        
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+        
         .form-control:focus {
             border-color: #667eea;
-            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.15);
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 10px;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-        .form-floating > label {
-            color: #6c757d;
-        }
-        .category-badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 50px;
-            font-size: 0.875rem;
-        }
-        #content {
-            min-height: 300px;
-            resize: vertical;
-        }
-        .char-counter {
-            font-size: 0.875rem;
-            color: #6c757d;
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
         }
     </style>
 </head>
@@ -117,137 +221,168 @@ $error_messages = $ObjFncs->getMsg('errors');
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="../auth/dashboard.php">
-                <i class="bi bi-journal-bookmark me-2"></i><?php echo htmlspecialchars($conf['site_name']); ?>
+            <a class="navbar-brand fw-bold" href="../dashboard.php">
+                <i class="bi bi-journal-text me-2"></i>NotesShare Academy
             </a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="my-notes.php">
-                    <i class="bi bi-journals me-1"></i>My Notes
-                </a>
-                <a class="nav-link" href="../auth/dashboard.php">
-                    <i class="bi bi-speedometer2 me-1"></i>Dashboard
-                </a>
-                <a class="nav-link" href="../logout.php">
-                    <i class="bi bi-box-arrow-right me-1"></i>Logout
-                </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../dashboard.php">
+                            <i class="bi bi-house-door me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">
+                            <i class="bi bi-plus-circle me-1"></i>Create Note
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../shared-notes.php">
+                            <i class="bi bi-share me-1"></i>Shared Notes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="my-notes.php">
+                            <i class="bi bi-folder me-1"></i>My Notes
+                        </a>
+                    </li>
+                </ul>
+                <div class="navbar-nav">
+                    <span class="navbar-text me-3">Welcome, <?php echo htmlspecialchars($user_name); ?>!</span>
+                </div>
             </div>
         </div>
     </nav>
 
-    <div class="container mt-4">
+    <!-- Main Content -->
+    <div class="container my-5">
         <div class="row justify-content-center">
             <div class="col-lg-8">
-                <!-- Page Header -->
-                <div class="card mb-4">
-                    <div class="card-body text-center py-4">
-                        <h1 class="display-6 fw-bold mb-2">
-                            <i class="bi bi-plus-circle text-primary me-3"></i>Create New Note
-                        </h1>
-                        <p class="text-muted mb-0">Share your knowledge with the community</p>
-                    </div>
-                </div>
-
-                <!-- Messages -->
-                <?php if ($success_message): ?>
+                
+                <!-- Success/Error Messages -->
+                <?php if (!empty($success_message)): ?>
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <i class="bi bi-check-circle me-2"></i><?php echo htmlspecialchars($success_message); ?>
+                        <i class="bi bi-check-circle-fill me-2"></i><?php echo htmlspecialchars($success_message); ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
-
-                <?php if ($error_messages): ?>
+                
+                <?php if (!empty($error_message)): ?>
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <i class="bi bi-exclamation-triangle me-2"></i><?php echo htmlspecialchars($error_messages); ?>
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i><?php echo htmlspecialchars($error_message); ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
 
-                <!-- Create Note Form -->
-                <div class="card">
+                <!-- Main Card -->
+                <div class="card main-card">
+                    <div class="card-header text-white">
+                        <h3 class="card-title mb-0">
+                            <i class="bi bi-plus-circle-fill me-2"></i>Create New Note
+                        </h3>
+                        <p class="mb-0 opacity-75">Share your ideas with text or upload files</p>
+                    </div>
+                    
                     <div class="card-body p-4">
-                        <form method="POST" id="createNoteForm">
+                        <form method="POST" enctype="multipart/form-data" id="createNoteForm">
+                            
+                            <!-- Note Type Selection -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold fs-5 mb-3">Choose Note Type:</label>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="note-type-selector active" data-type="text" onclick="selectNoteType('text')">
+                                            <div class="text-center">
+                                                <i class="bi bi-pencil-square display-4 text-primary mb-2"></i>
+                                                <h5 class="fw-bold">Text Note</h5>
+                                                <p class="text-muted mb-0">Write and format your own content</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="note-type-selector" data-type="file" onclick="selectNoteType('file')">
+                                            <div class="text-center">
+                                                <i class="bi bi-cloud-upload display-4 text-success mb-2"></i>
+                                                <h5 class="fw-bold">File Upload</h5>
+                                                <p class="text-muted mb-0">Upload documents, PDFs, or images</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="hidden" name="note_type" id="note_type" value="text">
+                            </div>
+
                             <!-- Title -->
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="title" name="title" placeholder="Enter note title" required maxlength="255">
-                                <label for="title">Note Title *</label>
-                                <div class="char-counter text-end mt-1">
-                                    <span id="titleCounter">0</span>/255 characters
+                            <div class="mb-3">
+                                <label for="title" class="form-label fw-bold">
+                                    <i class="bi bi-card-heading me-1"></i>Title <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control form-control-lg" id="title" name="title" 
+                                       placeholder="Enter a descriptive title for your note" required>
+                            </div>
+
+                            <!-- Text Note Content -->
+                            <div id="text-content-section">
+                                <div class="mb-3">
+                                    <label for="content" class="form-label fw-bold">
+                                        <i class="bi bi-file-text me-1"></i>Content <span class="text-danger">*</span>
+                                    </label>
+                                    <textarea class="form-control" id="content" name="content" rows="8" 
+                                              placeholder="Write your note content here..."></textarea>
                                 </div>
                             </div>
 
-                            <!-- Category and Status Row -->
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <div class="form-floating">
-                                        <select class="form-select" id="category_id" name="category_id">
-                                            <option value="">Select Category</option>
-                                            <?php foreach ($categories as $category): ?>
-                                                <option value="<?php echo $category['id']; ?>">
-                                                    <?php echo htmlspecialchars($category['name']); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <label for="category_id">Category</label>
+                            <!-- File Upload Section -->
+                            <div id="file-content-section" style="display: none;">
+                                <div class="mb-3">
+                                    <label for="uploaded_file" class="form-label fw-bold">
+                                        <i class="bi bi-cloud-upload me-1"></i>Upload File
+                                    </label>
+                                    <div class="file-drop-zone" onclick="document.getElementById('uploaded_file').click();">
+                                        <i class="bi bi-cloud-upload display-1 text-muted mb-3"></i>
+                                        <h5>Click to upload or drag and drop</h5>
+                                        <p class="text-muted">Supports: PDF, DOC, DOCX, Images (JPG, PNG, GIF)</p>
+                                        <p class="text-muted">Maximum size: 10MB</p>
                                     </div>
+                                    <input type="file" class="form-control d-none" id="uploaded_file" name="uploaded_file" 
+                                           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.txt">
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="form-floating">
-                                        <select class="form-select" id="status" name="status">
-                                            <option value="draft">Draft</option>
-                                            <option value="published">Published</option>
-                                        </select>
-                                        <label for="status">Status</label>
-                                    </div>
+                                
+                                <div class="mb-3">
+                                    <label for="description" class="form-label fw-bold">
+                                        <i class="bi bi-chat-text me-1"></i>Description
+                                    </label>
+                                    <textarea class="form-control" id="description" name="description" rows="4" 
+                                              placeholder="Add a description for your uploaded file..."></textarea>
                                 </div>
-                            </div>
-
-                            <!-- Content -->
-                            <div class="form-floating mb-3">
-                                <textarea class="form-control" id="content" name="content" placeholder="Write your note content here..." required style="height: 300px;"></textarea>
-                                <label for="content">Note Content *</label>
-                                <div class="char-counter text-end mt-1">
-                                    <span id="contentCounter">0</span> characters
-                                </div>
-                            </div>
-
-                            <!-- Summary (Optional) -->
-                            <div class="form-floating mb-3">
-                                <textarea class="form-control" id="summary" name="summary" placeholder="Brief summary of your note (optional)" maxlength="500" style="height: 100px;"></textarea>
-                                <label for="summary">Summary (Optional)</label>
-                                <div class="char-counter text-end mt-1">
-                                    <span id="summaryCounter">0</span>/500 characters
-                                </div>
-                            </div>
-
-                            <!-- Tags -->
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="tags" name="tags" placeholder="Enter tags separated by commas">
-                                <label for="tags">Tags (comma-separated)</label>
-                                <div class="form-text">e.g., math, calculus, derivatives, limits</div>
                             </div>
 
                             <!-- Options -->
                             <div class="row mb-4">
                                 <div class="col-md-6">
-                                    <div class="form-check">
+                                    <div class="form-check form-switch">
                                         <input class="form-check-input" type="checkbox" id="is_public" name="is_public">
-                                        <label class="form-check-label" for="is_public">
+                                        <label class="form-check-label fw-bold" for="is_public">
                                             <i class="bi bi-globe me-1"></i>Make this note public
                                         </label>
-                                        <div class="form-text">Public notes can be viewed by all users</div>
+                                        <div class="form-text">Public notes can be seen by all users</div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Action Buttons -->
-                            <div class="d-flex gap-2 justify-content-end">
-                                <a href="../auth/dashboard.php" class="btn btn-outline-secondary">
-                                    <i class="bi bi-x-circle me-1"></i>Cancel
-                                </a>
-                                <button type="submit" name="create_note" class="btn btn-primary" id="submitBtn">
-                                    <i class="bi bi-check-circle me-1"></i>Create Note
+                            <!-- Submit Buttons -->
+                            <div class="d-flex gap-3">
+                                <button type="submit" class="btn btn-gradient flex-fill">
+                                    <i class="bi bi-check-circle-fill me-2"></i>Create Note
                                 </button>
+                                <a href="../dashboard.php" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle me-2"></i>Cancel
+                                </a>
                             </div>
+
                         </form>
                     </div>
                 </div>
@@ -257,56 +392,52 @@ $error_messages = $ObjFncs->getMsg('errors');
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Character counters
-        const titleInput = document.getElementById('title');
-        const contentInput = document.getElementById('content');
-        const summaryInput = document.getElementById('summary');
-        const titleCounter = document.getElementById('titleCounter');
-        const contentCounter = document.getElementById('contentCounter');
-        const summaryCounter = document.getElementById('summaryCounter');
-
-        function updateCounter(input, counter, max = null) {
-            const length = input.value.length;
-            counter.textContent = length;
+        function selectNoteType(type) {
+            // Update UI
+            document.querySelectorAll('.note-type-selector').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.querySelector(`[data-type="${type}"]`).classList.add('active');
             
-            if (max && length > max * 0.9) {
-                counter.classList.add('text-warning');
+            // Update hidden input
+            document.getElementById('note_type').value = type;
+            
+            // Show/hide sections
+            if (type === 'text') {
+                document.getElementById('text-content-section').style.display = 'block';
+                document.getElementById('file-content-section').style.display = 'none';
+                document.getElementById('content').required = true;
+                document.getElementById('uploaded_file').required = false;
             } else {
-                counter.classList.remove('text-warning');
+                document.getElementById('text-content-section').style.display = 'none';
+                document.getElementById('file-content-section').style.display = 'block';
+                document.getElementById('content').required = false;
+                document.getElementById('uploaded_file').required = true;
             }
         }
-
-        titleInput.addEventListener('input', () => updateCounter(titleInput, titleCounter, 255));
-        contentInput.addEventListener('input', () => updateCounter(contentInput, contentCounter));
-        summaryInput.addEventListener('input', () => updateCounter(summaryInput, summaryCounter, 500));
-
-        // Form validation
-        document.getElementById('createNoteForm').addEventListener('submit', function(e) {
-            const title = titleInput.value.trim();
-            const content = contentInput.value.trim();
-            
-            if (!title || !content) {
-                e.preventDefault();
-                alert('Please fill in both title and content fields.');
-                return false;
-            }
-            
-            // Show loading state
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating...';
-            submitBtn.disabled = true;
-        });
-
-        // Auto-generate summary if not provided
-        contentInput.addEventListener('blur', function() {
-            const summaryInput = document.getElementById('summary');
-            if (!summaryInput.value.trim() && this.value.trim()) {
-                const content = this.value.trim();
-                const summary = content.substring(0, 150) + (content.length > 150 ? '...' : '');
-                summaryInput.value = summary;
-                updateCounter(summaryInput, summaryCounter, 500);
+        
+        // File upload preview
+        document.getElementById('uploaded_file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const dropZone = document.querySelector('.file-drop-zone');
+                dropZone.innerHTML = `
+                    <i class="bi bi-file-earmark-check display-1 text-success mb-3"></i>
+                    <h5>File Selected: ${file.name}</h5>
+                    <p class="text-muted">Size: ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p class="text-success">Click to change file</p>
+                `;
             }
         });
+        
+        // Auto-hide alerts
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
     </script>
 </body>
 </html>
