@@ -254,11 +254,12 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                                 <i class="bi bi-share me-2"></i>Shared Notes
                             </button>
                         </li>
-                        <li class="nav-item">
+                         <li class="nav-item">
                             <button class="nav-link w-100 text-start border-0" style="background: none;" onclick="navigateTo('settings')">
                                 <i class="bi bi-gear me-2"></i>Settings
                             </button>
                         </li>
+                        
                         
                     </ul>
                 </div>
@@ -649,6 +650,10 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                 case 'shared-notes':
                     // Navigate to shared notes
                     window.location.href = 'shared-notes.php';
+                    break;
+                case 'settings':
+                    // Navigate to settings
+                    window.location.href = 'auth/settings.php';
                     break;
                 default:
                     console.error('Unknown navigation target:', page);
