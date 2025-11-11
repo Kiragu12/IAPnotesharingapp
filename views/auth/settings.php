@@ -71,7 +71,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
                 ':id' => $user_id
             ]);
 
-            $success_message = 'Profile updated successfully!';
+            // Update session variables to reflect changes
+            $_SESSION['user_name'] = $name;
+            $_SESSION['full_name'] = $name;
+            $_SESSION['user_email'] = $email;
+
+            $success_message = 'Profile updated successfully! Changes are now active.';
             // Refresh current user values
             $current_user['full_name'] = $name;
             $current_user['email'] = $email;
@@ -86,9 +91,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
     $old_pass = $_POST['old_password'] ?? '';
     $new_pass = $_POST['new_password'] ?? '';
+    $confirm_pass = $_POST['confirm_password'] ?? '';
 
-    if ($old_pass === '' || $new_pass === '') {
-        $error_message = 'Please provide both old and new passwords.';
+    if ($old_pass === '' || $new_pass === '' || $confirm_pass === '') {
+        $error_message = 'Please fill in all password fields.';
+    } elseif ($new_pass !== $confirm_pass) {
+        $error_message = 'New password and confirmation do not match.';
     } elseif (strlen($new_pass) < ($conf['min_password_length'] ?? 6)) {
         $error_message = 'New password must be at least ' . ($conf['min_password_length'] ?? 6) . ' characters long.';
     } else {
@@ -137,12 +145,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
             box-shadow: 0 15px 35px rgba(0,0,0,0.08);
             overflow: hidden;
             border: none;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
         
         .card-header {
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
             border-bottom: 2px solid #f8f9fa;
+            padding: 25px 30px;
         }
         
         .btn-gradient {
@@ -338,23 +347,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                             <i class="bi bi-person-circle me-2"></i>Update Profile
                         </h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body" style="padding: 30px;">
                         <form method="POST">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Full Name</label>
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold mb-2">Full Name</label>
                                     <input type="text" name="name" class="form-control" 
                                            value="<?php echo htmlspecialchars($current_user['full_name'] ?? ''); ?>" required>
+                                    <div class="form-text">Your display name across the platform</div>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Email Address</label>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold mb-2">Email Address</label>
                                     <input type="email" name="email" class="form-control" 
                                            value="<?php echo htmlspecialchars($current_user['email'] ?? ''); ?>" required>
+                                    <div class="form-text">Used for login and notifications</div>
                                 </div>
                             </div>
-                            <button type="submit" name="update_profile" class="btn btn-gradient">
-                                <i class="bi bi-check-circle me-2"></i>Save Changes
-                            </button>
+                            <div class="mt-4 pt-3 border-top">
+                                <button type="submit" name="update_profile" class="btn btn-gradient">
+                                    <i class="bi bi-check-circle me-2"></i>Save Changes
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -366,23 +379,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                             <i class="bi bi-shield-lock me-2"></i>Change Password
                         </h5>
                     </div>
-                    <div class="card-body">
-                        <form method="POST">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Current Password</label>
-                                <input type="password" name="old_password" class="form-control" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">New Password</label>
-                                <input type="password" name="new_password" class="form-control" 
-                                       minlength="<?php echo $conf['min_password_length'] ?? 6; ?>" required>
-                                <div class="form-text">
-                                    Password must be at least <?php echo $conf['min_password_length'] ?? 6; ?> characters long.
+                    <div class="card-body" style="padding: 30px;">
+                        <form method="POST" id="passwordForm">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold mb-2">Current Password</label>
+                                    <input type="password" name="old_password" class="form-control" required>
+                                    <div class="form-text">Enter your existing password to verify</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold mb-2">New Password</label>
+                                    <input type="password" name="new_password" class="form-control" 
+                                           minlength="<?php echo $conf['min_password_length'] ?? 6; ?>" required 
+                                           id="newPassword">
+                                    <div class="form-text">
+                                        Password must be at least <?php echo $conf['min_password_length'] ?? 6; ?> characters long.
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold mb-2">Confirm New Password</label>
+                                    <input type="password" name="confirm_password" class="form-control" 
+                                           minlength="<?php echo $conf['min_password_length'] ?? 6; ?>" required 
+                                           id="confirmPassword">
+                                    <div class="form-text" id="passwordMatch"></div>
                                 </div>
                             </div>
-                            <button type="submit" name="change_password" class="btn btn-gradient">
-                                <i class="bi bi-key me-2"></i>Update Password
-                            </button>
+                            <div class="mt-4 pt-3 border-top">
+                                <button type="submit" name="change_password" class="btn btn-gradient" id="passwordSubmit">
+                                    <i class="bi bi-key me-2"></i>Update Password
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -394,25 +420,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                             <i class="bi bi-shield-check me-2"></i>Security Settings
                         </h5>
                     </div>
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div>
-                                <strong>Two-Factor Authentication (2FA)</strong>
-                                <div class="text-muted small">Add an extra layer of security to your account</div>
+                    <div class="card-body" style="padding: 30px;">
+                        <div class="row g-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                    <div>
+                                        <strong><i class="bi bi-shield-check me-2 text-primary"></i>Two-Factor Authentication (2FA)</strong>
+                                        <div class="text-muted small mt-1">Add an extra layer of security to your account</div>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="status-badge <?php echo $has_2fa_enabled ? 'status-active' : 'status-inactive'; ?>">
+                                            <?php echo $has_2fa_enabled ? 'Enabled' : 'Disabled'; ?>
+                                        </span>
+                                        <div class="mt-2">
+                                            <button class="btn btn-outline-primary btn-sm" onclick="manage2FA()">
+                                                <i class="bi bi-gear me-1"></i>Manage
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <span class="status-badge <?php echo $has_2fa_enabled ? 'status-active' : 'status-inactive'; ?>">
-                                <?php echo $has_2fa_enabled ? 'Enabled' : 'Disabled'; ?>
-                            </span>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>Login Sessions</strong>
-                                <div class="text-muted small">Manage your active login sessions</div>
+                            
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                    <div>
+                                        <strong><i class="bi bi-list me-2 text-primary"></i>Login Sessions</strong>
+                                        <div class="text-muted small mt-1">Manage your active login sessions and devices</div>
+                                    </div>
+                                    <div>
+                                        <a href="../auth/sessions.php" class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-list me-1"></i>View Sessions
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
-                            <a href="../auth/sessions.php" class="btn btn-outline-primary btn-sm">
-                                <i class="bi bi-list me-1"></i>View Sessions
-                            </a>
+                            
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                    <div>
+                                        <strong><i class="bi bi-download me-2 text-primary"></i>Download Your Data</strong>
+                                        <div class="text-muted small mt-1">Export all your notes and account information</div>
+                                    </div>
+                                    <div>
+                                        <button class="btn btn-outline-success btn-sm" onclick="exportData()">
+                                            <i class="bi bi-download me-1"></i>Export Data
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center p-3 bg-danger bg-opacity-10 rounded border border-danger border-opacity-25">
+                                    <div>
+                                        <strong class="text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Delete Account</strong>
+                                        <div class="text-muted small mt-1">Permanently delete your account and all data</div>
+                                    </div>
+                                    <div>
+                                        <button class="btn btn-outline-danger btn-sm" onclick="confirmDeleteAccount()">
+                                            <i class="bi bi-trash me-1"></i>Delete Account
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -431,6 +500,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                 bsAlert.close();
             });
         }, 5000);
+
+        // Password validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const newPassword = document.getElementById('newPassword');
+            const confirmPassword = document.getElementById('confirmPassword');
+            const passwordMatch = document.getElementById('passwordMatch');
+            const submitBtn = document.getElementById('passwordSubmit');
+
+            function validatePassword() {
+                if (newPassword.value && confirmPassword.value) {
+                    if (newPassword.value === confirmPassword.value) {
+                        passwordMatch.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Passwords match</span>';
+                        submitBtn.disabled = false;
+                    } else {
+                        passwordMatch.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Passwords do not match</span>';
+                        submitBtn.disabled = true;
+                    }
+                } else {
+                    passwordMatch.innerHTML = '';
+                    submitBtn.disabled = false;
+                }
+            }
+
+            newPassword.addEventListener('input', validatePassword);
+            confirmPassword.addEventListener('input', validatePassword);
+        });
+
+        // 2FA Management
+        function manage2FA() {
+            alert('2FA management will redirect to setup page. This feature can be implemented based on your 2FA system.');
+            // window.location.href = 'two-factor-setup.php';
+        }
+
+        // Export Data
+        function exportData() {
+            if (confirm('This will download all your notes and account data as a JSON file. Continue?')) {
+                // Create export functionality
+                window.location.href = 'export-data.php';
+            }
+        }
+
+        // Delete Account
+        function confirmDeleteAccount() {
+            if (confirm('⚠️ WARNING: This will permanently delete your account and ALL your notes. This action cannot be undone!\n\nAre you absolutely sure you want to delete your account?')) {
+                if (confirm('Final confirmation: Type "DELETE" in the prompt that follows to confirm account deletion.')) {
+                    const confirmation = prompt('Type "DELETE" to confirm account deletion:');
+                    if (confirmation === 'DELETE') {
+                        window.location.href = 'delete-account.php';
+                    } else {
+                        alert('Account deletion cancelled.');
+                    }
+                }
+            }
+        }
+
+        // Add smooth animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.settings-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
     </script>
 </body>
 </html>
