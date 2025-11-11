@@ -770,8 +770,25 @@ $welcome_msg = $ObjFncs->getMsg('msg');
         // Delete note function
         function deleteNote(noteId) {
             if (confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
-                // You can implement the delete functionality here
-                window.location.href = 'notes/delete.php?id=' + noteId;
+                // Create a form to submit the delete request
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'notes/my-notes.php';
+                
+                const noteIdInput = document.createElement('input');
+                noteIdInput.type = 'hidden';
+                noteIdInput.name = 'note_id';
+                noteIdInput.value = noteId;
+                
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'delete';
+                
+                form.appendChild(noteIdInput);
+                form.appendChild(actionInput);
+                document.body.appendChild(form);
+                form.submit();
             }
         }
         
