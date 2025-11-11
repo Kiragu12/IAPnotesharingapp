@@ -78,7 +78,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         
                         $note_id = $notesController->createNote($data);
                         if ($note_id) {
-                            $success_message = "File uploaded successfully!";
+                            // Set success message and redirect to My Notes page
+                            $ObjFncs->setMsg('success', 'File uploaded successfully! Your note has been created.', 'success');
+                            header('Location: my-notes.php');
+                            exit();
                         } else {
                             $error_message = "Failed to save note to database.";
                         }
@@ -101,7 +104,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $note_id = $notesController->createNote($data);
                 if ($note_id) {
-                    $success_message = "Text note created successfully!";
+                    // Set success message and redirect to My Notes page
+                    $ObjFncs->setMsg('success', 'Text note created successfully! Your note has been added.', 'success');
+                    header('Location: my-notes.php');
+                    exit();
                 } else {
                     $error_message = "Failed to save note to database.";
                 }
