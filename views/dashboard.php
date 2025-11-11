@@ -59,10 +59,17 @@ try {
         'private_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE user_id = ? AND is_public = ?", [$user_id, 0])['count']
     ];
     
+    // Get navigation counters
+    $nav_counters = [
+        'my_notes_count' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE user_id = ?", [$user_id])['count'],
+        'shared_notes_count' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE is_public = 1", [])['count']
+    ];
+    
 } catch (Exception $e) {
     error_log("Dashboard error: " . $e->getMessage());
     $user_notes = [];
     $stats = ['total_notes' => 0, 'public_notes' => 0, 'private_notes' => 0];
+    $nav_counters = ['my_notes_count' => 0, 'shared_notes_count' => 0];
 }
 
 // Check for welcome messages
@@ -235,6 +242,18 @@ $welcome_msg = $ObjFncs->getMsg('msg');
             background: rgba(255, 255, 255, 0.2);
             border: 2px solid rgba(255, 255, 255, 0.3);
         }
+        .nav-link .badge {
+            font-size: 0.7rem;
+            min-width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .nav-link:hover .badge {
+            transform: scale(1.1);
+            transition: transform 0.2s ease;
+        }
     </style>
 </head>
 <body>
@@ -297,13 +316,15 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                             </button>
                         </li>
                         <li class="nav-item">
-                            <button class="nav-link w-100 text-start border-0" style="background: none;" onclick="navigateTo('my-notes')">
-                                <i class="bi bi-journal-text me-2"></i>My Notes
+                            <button class="nav-link w-100 text-start border-0 d-flex justify-content-between align-items-center" style="background: none;" onclick="navigateTo('my-notes')">
+                                <span><i class="bi bi-journal-text me-2"></i>My Notes</span>
+                                <span class="badge bg-primary rounded-pill"><?php echo $nav_counters['my_notes_count']; ?></span>
                             </button>
                         </li>
                         <li class="nav-item">
-                            <button class="nav-link w-100 text-start border-0" style="background: none;" onclick="navigateTo('shared-notes')">
-                                <i class="bi bi-share me-2"></i>Shared Notes
+                            <button class="nav-link w-100 text-start border-0 d-flex justify-content-between align-items-center" style="background: none;" onclick="navigateTo('shared-notes')">
+                                <span><i class="bi bi-share me-2"></i>Shared Notes</span>
+                                <span class="badge bg-success rounded-pill"><?php echo $nav_counters['shared_notes_count']; ?></span>
                             </button>
                         </li>
                          <li class="nav-item">
