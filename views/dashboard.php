@@ -4,7 +4,11 @@ session_start();
 
 // Load classes for message handling
 require_once '../app/Services/Global/fncs.php';
+require_once '../config/conf.php';
+require_once '../app/Services/Global/Database.php';
+
 $ObjFncs = new fncs();
+$db = new Database($conf);
 
 // Check if user is logged in
 $is_logged_in = isset($_SESSION['user_id']);
@@ -17,6 +21,49 @@ if (!$is_logged_in) {
 $user_name = $_SESSION['user_name'] ?? 'User';
 $user_email = $_SESSION['user_email'] ?? '';
 $user_id = $_SESSION['user_id'];
+
+// Handle search functionality
+$search = $_GET['search'] ?? '';
+
+// Get user's recent notes with search capability
+try {
+    $where_clauses = ["notes.user_id = ?"];
+    $params = [$user_id];
+    
+    if (!empty($search)) {
+        $search_term = "%$search%";
+        $where_clauses[] = "(notes.title LIKE ? OR notes.content LIKE ? OR notes.tags LIKE ?)";
+        $params[] = $search_term;
+        $params[] = $search_term;
+        $params[] = $search_term;
+    }
+    
+    $where_sql = implode(' AND ', $where_clauses);
+    
+    $sql = "SELECT notes.*, 
+                   CASE 
+                       WHEN notes.note_type = 'file' THEN notes.content
+                       ELSE SUBSTRING(notes.content, 1, 150)
+                   END as preview
+            FROM notes 
+            WHERE $where_sql 
+            ORDER BY notes.updated_at DESC 
+            LIMIT 6";
+    
+    $user_notes = $db->fetchAll($sql, $params);
+    
+    // Get user statistics
+    $stats = [
+        'total_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE user_id = ?", [$user_id])['count'],
+        'public_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE user_id = ? AND is_public = ?", [$user_id, 1])['count'],
+        'private_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE user_id = ? AND is_public = ?", [$user_id, 0])['count']
+    ];
+    
+} catch (Exception $e) {
+    error_log("Dashboard error: " . $e->getMessage());
+    $user_notes = [];
+    $stats = ['total_notes' => 0, 'public_notes' => 0, 'private_notes' => 0];
+}
 
 // Check for welcome messages
 $welcome_msg = $ObjFncs->getMsg('msg');
@@ -200,10 +247,14 @@ $welcome_msg = $ObjFncs->getMsg('msg');
             
             <!-- Search Bar -->
             <div class="d-flex flex-grow-1 mx-4">
-                <input type="search" class="form-control search-box me-3" placeholder="Search notes, subjects, or users..." style="max-width: 500px;">
-                <button class="btn btn-outline-light" type="button">
-                    <i class="bi bi-search"></i>
-                </button>
+                <form method="GET" class="d-flex w-100" style="max-width: 500px;">
+                    <input type="search" name="search" class="form-control search-box me-2" 
+                           placeholder="Search your notes..." value="<?php echo htmlspecialchars($search); ?>"
+                           style="max-width: 400px;">
+                    <button class="btn btn-outline-light" type="submit">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </form>
             </div>
             
             <!-- User Menu -->
@@ -313,9 +364,9 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                         </div>
                     </div>
 
-                    <!-- Stats Cards - Only My Notes and Shared Notes -->
+                    <!-- Stats Cards - Real Data -->
                     <div class="row g-4 mb-4">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="card stats-card border-0 h-100">
                                 <div class="card-body text-center">
                                     <div class="stats-icon bg-primary mx-auto mb-3">
@@ -323,30 +374,48 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                                     </div>
                                     <div class="row align-items-center">
                                         <div class="col">
-                                            <h3 class="fw-bold text-primary mb-1">0</h3>
-                                            <p class="text-muted mb-0 small">My Notes</p>
+                                            <h3 class="fw-bold text-primary mb-1"><?php echo $stats['total_notes']; ?></h3>
+                                            <p class="text-muted mb-0 small">Total Notes</p>
                                         </div>
                                     </div>
                                     <div class="progress mt-2" style="height: 4px;">
-                                        <div class="progress-bar bg-primary" style="width: 0%"></div>
+                                        <div class="progress-bar bg-primary" style="width: <?php echo min(100, $stats['total_notes'] * 10); ?>%"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="card stats-card border-0 h-100">
                                 <div class="card-body text-center">
                                     <div class="stats-icon bg-success mx-auto mb-3">
-                                        <i class="bi bi-share"></i>
+                                        <i class="bi bi-globe"></i>
                                     </div>
                                     <div class="row align-items-center">
                                         <div class="col">
-                                            <h3 class="fw-bold text-success mb-1">0</h3>
-                                            <p class="text-muted mb-0 small">Shared Notes</p>
+                                            <h3 class="fw-bold text-success mb-1"><?php echo $stats['public_notes']; ?></h3>
+                                            <p class="text-muted mb-0 small">Public Notes</p>
                                         </div>
                                     </div>
                                     <div class="progress mt-2" style="height: 4px;">
-                                        <div class="progress-bar bg-success" style="width: 0%"></div>
+                                        <div class="progress-bar bg-success" style="width: <?php echo min(100, $stats['public_notes'] * 10); ?>%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card stats-card border-0 h-100">
+                                <div class="card-body text-center">
+                                    <div class="stats-icon bg-info mx-auto mb-3">
+                                        <i class="bi bi-lock"></i>
+                                    </div>
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <h3 class="fw-bold text-info mb-1"><?php echo $stats['private_notes']; ?></h3>
+                                            <p class="text-muted mb-0 small">Private Notes</p>
+                                        </div>
+                                    </div>
+                                    <div class="progress mt-2" style="height: 4px;">
+                                        <div class="progress-bar bg-info" style="width: <?php echo min(100, $stats['private_notes'] * 10); ?>%"></div>
                                     </div>
                                 </div>
                             </div>
@@ -359,7 +428,12 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                             <div class="card border-0 shadow-sm">
                                 <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                     <h4 class="fw-bold mb-0">
-                                        <i class="bi bi-journal-text me-2 text-primary"></i>Recent Notes
+                                        <i class="bi bi-journal-text me-2 text-primary"></i>
+                                        <?php if (!empty($search)): ?>
+                                            Search Results for "<?php echo htmlspecialchars($search); ?>"
+                                        <?php else: ?>
+                                            Recent Notes
+                                        <?php endif; ?>
                                     </h4>
                                     <div class="btn-group">
                                         <a href="notes/create.php" class="btn btn-primary-custom btn-sm">
@@ -376,140 +450,101 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                                     </div>
                                 </div>
                                 <div class="card-body p-0">
-                                    <!-- Note Card 1 -->
-                                    <div class="note-card border-0 border-bottom">
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                                <div class="flex-grow-1">
-                                                    <div class="d-flex align-items-center mb-2">
-                                                        <h5 class="fw-bold mb-0 me-3">Data Structures & Algorithms</h5>
-                                                        <span class="badge category-badge">Computer Science</span>
-                                                    </div>
-                                                    <p class="text-muted mb-0">Comprehensive notes on binary trees, sorting algorithms, and complexity analysis...</p>
-                                                </div>
-                                                <div class="dropdown ms-3">
-                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                        <i class="bi bi-three-dots"></i>
-                                                    </button>
-                                                    <ul class="dropdown-menu dropdown-menu-end">
-                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-eye me-2"></i>View</a></li>
-                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Edit</a></li>
-                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-share me-2"></i>Share</a></li>
-                                                        <li><hr class="dropdown-divider"></li>
-                                                        <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div class="d-flex align-items-center text-muted">
-                                                    <small class="me-3">
-                                                        <i class="bi bi-clock me-1"></i>2 hours ago
-                                                    </small>
-                                                    <small class="me-3">
-                                                        <i class="bi bi-file-text me-1"></i>5 pages
-                                                    </small>
-                                                </div>
-                                                <div class="d-flex gap-2">
-                                                    <span class="badge bg-primary-subtle text-primary">
-                                                        <i class="bi bi-eye me-1"></i>23 views
-                                                    </span>
-                                                    <span class="badge bg-success-subtle text-success">
-                                                        <i class="bi bi-heart me-1"></i>5 likes
-                                                    </span>
-                                                </div>
+                                    <?php if (empty($user_notes)): ?>
+                                        <!-- No notes state -->
+                                        <div class="note-card border-0">
+                                            <div class="card-body text-center py-5">
+                                                <i class="bi bi-journal-plus text-muted" style="font-size: 3rem;"></i>
+                                                <h5 class="text-muted mt-3">
+                                                    <?php if (!empty($search)): ?>
+                                                        No notes found for "<?php echo htmlspecialchars($search); ?>"
+                                                    <?php else: ?>
+                                                        No notes yet
+                                                    <?php endif; ?>
+                                                </h5>
+                                                <p class="text-muted mb-4">
+                                                    <?php if (!empty($search)): ?>
+                                                        Try a different search term or create a new note.
+                                                    <?php else: ?>
+                                                        Start creating your first note to see it here.
+                                                    <?php endif; ?>
+                                                </p>
+                                                <a href="notes/create.php" class="btn btn-primary">
+                                                    <i class="bi bi-plus-circle me-2"></i>Create Your First Note
+                                                </a>
                                             </div>
                                         </div>
-                                    </div>
-
-                                    <!-- Note Card 2 -->
-                                    <div class="note-card border-0 border-bottom">
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                                <div class="flex-grow-1">
-                                                    <div class="d-flex align-items-center mb-2">
-                                                        <h5 class="fw-bold mb-0 me-3">Database Design Principles</h5>
-                                                        <span class="badge bg-info text-white">Database</span>
+                                    <?php else: ?>
+                                        <!-- Dynamic notes from database -->
+                                        <?php foreach ($user_notes as $index => $note): ?>
+                                            <div class="note-card border-0 <?php echo $index < count($user_notes) - 1 ? 'border-bottom' : ''; ?>">
+                                                <div class="card-body">
+                                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                                        <div class="flex-grow-1">
+                                                            <div class="d-flex align-items-center mb-2">
+                                                                <h5 class="fw-bold mb-0 me-3"><?php echo htmlspecialchars($note['title']); ?></h5>
+                                                                <?php if ($note['note_type'] === 'file'): ?>
+                                                                    <span class="badge bg-success text-white">
+                                                                        <i class="bi bi-file-earmark me-1"></i>File
+                                                                    </span>
+                                                                <?php else: ?>
+                                                                    <span class="badge bg-primary text-white">
+                                                                        <i class="bi bi-file-text me-1"></i>Text
+                                                                    </span>
+                                                                <?php endif; ?>
+                                                                <?php if ($note['is_public']): ?>
+                                                                    <span class="badge bg-info text-white ms-2">
+                                                                        <i class="bi bi-globe me-1"></i>Public
+                                                                    </span>
+                                                                <?php else: ?>
+                                                                    <span class="badge bg-secondary text-white ms-2">
+                                                                        <i class="bi bi-lock me-1"></i>Private
+                                                                    </span>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                            <p class="text-muted mb-0"><?php echo htmlspecialchars($note['preview']); ?><?php echo strlen($note['content']) > 150 ? '...' : ''; ?></p>
+                                                        </div>
+                                                        <div class="dropdown ms-3">
+                                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                                <i class="bi bi-three-dots"></i>
+                                                            </button>
+                                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                                <li><a class="dropdown-item" href="notes/view.php?id=<?php echo $note['id']; ?>"><i class="bi bi-eye me-2"></i>View</a></li>
+                                                                <li><a class="dropdown-item" href="notes/edit.php?id=<?php echo $note['id']; ?>"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                                                                <?php if ($note['note_type'] === 'file' && $note['file_path']): ?>
+                                                                    <li><a class="dropdown-item" href="../<?php echo htmlspecialchars($note['file_path']); ?>" target="_blank"><i class="bi bi-download me-2"></i>Download</a></li>
+                                                                <?php endif; ?>
+                                                                <li><hr class="dropdown-divider"></li>
+                                                                <li><a class="dropdown-item text-danger" href="#" onclick="deleteNote(<?php echo $note['id']; ?>)"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                                            </ul>
+                                                        </div>
                                                     </div>
-                                                    <p class="text-muted mb-0">Normalization forms, ER diagrams, and best practices for designing efficient database schemas.</p>
-                                                </div>
-                                                <div class="dropdown ms-3">
-                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                        <i class="bi bi-three-dots"></i>
-                                                    </button>
-                                                    <ul class="dropdown-menu dropdown-menu-end">
-                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-eye me-2"></i>View</a></li>
-                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Edit</a></li>
-                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-share me-2"></i>Share</a></li>
-                                                        <li><hr class="dropdown-divider"></li>
-                                                        <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div class="d-flex align-items-center text-muted">
-                                                    <small class="me-3">
-                                                        <i class="bi bi-clock me-1"></i>Yesterday
-                                                    </small>
-                                                    <small class="me-3">
-                                                        <i class="bi bi-file-text me-1"></i>8 pages
-                                                    </small>
-                                                </div>
-                                                <div class="d-flex gap-2">
-                                                    <span class="badge bg-primary-subtle text-primary">
-                                                        <i class="bi bi-eye me-1"></i>41 views
-                                                    </span>
-                                                    <span class="badge bg-success-subtle text-success">
-                                                        <i class="bi bi-heart me-1"></i>12 likes
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Note Card 3 -->
-                                    <div class="note-card border-0">
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                                <div class="flex-grow-1">
-                                                    <div class="d-flex align-items-center mb-2">
-                                                        <h5 class="fw-bold mb-0 me-3">Web Development Frameworks</h5>
-                                                        <span class="badge bg-warning text-dark">Web Development</span>
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div class="d-flex align-items-center text-muted">
+                                                            <small class="me-3">
+                                                                <i class="bi bi-clock me-1"></i><?php echo date('M j, Y • g:i A', strtotime($note['updated_at'])); ?>
+                                                            </small>
+                                                            <?php if ($note['note_type'] === 'file'): ?>
+                                                                <small class="me-3">
+                                                                    <i class="bi bi-file-earmark me-1"></i><?php echo htmlspecialchars($note['file_name']); ?>
+                                                                </small>
+                                                            <?php endif; ?>
+                                                            <?php if ($note['tags']): ?>
+                                                                <small class="me-3">
+                                                                    <i class="bi bi-tags me-1"></i><?php echo htmlspecialchars($note['tags']); ?>
+                                                                </small>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                        <div class="d-flex gap-2">
+                                                            <span class="badge bg-light text-dark">
+                                                                <i class="bi bi-pencil me-1"></i><?php echo $note['status']; ?>
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                    <p class="text-muted mb-0">Comparison of React, Vue, and Angular frameworks. Includes pros, cons, and use cases for each.</p>
-                                                </div>
-                                                <div class="dropdown ms-3">
-                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                        <i class="bi bi-three-dots"></i>
-                                                    </button>
-                                                    <ul class="dropdown-menu dropdown-menu-end">
-                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-eye me-2"></i>View</a></li>
-                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Edit</a></li>
-                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-share me-2"></i>Share</a></li>
-                                                        <li><hr class="dropdown-divider"></li>
-                                                        <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
-                                                    </ul>
                                                 </div>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div class="d-flex align-items-center text-muted">
-                                                    <small class="me-3">
-                                                        <i class="bi bi-clock me-1"></i>3 days ago
-                                                    </small>
-                                                    <small class="me-3">
-                                                        <i class="bi bi-file-text me-1"></i>12 pages
-                                                    </small>
-                                                </div>
-                                                <div class="d-flex gap-2">
-                                                    <span class="badge bg-primary-subtle text-primary">
-                                                        <i class="bi bi-eye me-1"></i>67 views
-                                                    </span>
-                                                    <span class="badge bg-success-subtle text-success">
-                                                        <i class="bi bi-heart me-1"></i>18 likes
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -659,22 +694,65 @@ $welcome_msg = $ObjFncs->getMsg('msg');
         
 
         
-        // Search functionality
-        document.querySelector('.search-box').addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const noteCards = document.querySelectorAll('.note-card');
+        // Enhanced search functionality with real-time server search
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.querySelector('input[name="search"]');
+            const searchForm = document.querySelector('form');
+            let searchTimeout;
+
+            if (searchInput) {
+                // Real-time search with debouncing
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(function() {
+                        // Auto-submit form for real-time search
+                        if (searchInput.value.length >= 1 || searchInput.value.length === 0) {
+                            searchForm.submit();
+                        }
+                    }, 600); // 600ms delay
+                });
+
+                // Submit on Enter key
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        clearTimeout(searchTimeout);
+                        searchForm.submit();
+                    }
+                });
+            }
+
+            // Highlight search terms in results
+            const searchTerm = "<?php echo htmlspecialchars($search); ?>";
+            if (searchTerm.length > 0) {
+                highlightSearchTerms(searchTerm);
+            }
+        });
+
+        // Function to highlight search terms in note titles and content
+        function highlightSearchTerms(term) {
+            const noteElements = document.querySelectorAll('.note-card h5, .note-card p');
+            const regex = new RegExp(`(${escapeRegex(term)})`, 'gi');
             
-            noteCards.forEach(card => {
-                const title = card.querySelector('h5').textContent.toLowerCase();
-                const content = card.querySelector('p').textContent.toLowerCase();
-                
-                if (title.includes(searchTerm) || content.includes(searchTerm)) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
+            noteElements.forEach(element => {
+                if (element.textContent.toLowerCase().includes(term.toLowerCase())) {
+                    element.innerHTML = element.innerHTML.replace(regex, '<mark style="background: #fff3cd; color: #856404; padding: 2px 4px; border-radius: 3px;">$1</mark>');
                 }
             });
-        });
+        }
+
+        // Helper function to escape special characters in regex
+        function escapeRegex(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // Delete note function
+        function deleteNote(noteId) {
+            if (confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
+                // You can implement the delete functionality here
+                window.location.href = 'notes/delete.php?id=' + noteId;
+            }
+        }
         
         // Add smooth animations on load
         document.addEventListener('DOMContentLoaded', function() {
