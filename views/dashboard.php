@@ -50,15 +50,16 @@ $welcome_msg = $ObjFncs->getMsg('msg');
             color: #666;
             padding: 0.75rem 1.5rem;
             margin: 0.25rem 1rem;
-            border-radius: 10px;
             transition: all 0.3s ease;
         }
-        .sidebar .nav-link:hover,
-        .sidebar .nav-link.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            transform: translateX(5px);
+        .sidebar .nav-link:hover {
+            color: #333;
+            transform: translateY(-4px);
         }
+        .sidebar .nav-link.active {
+            color: #666;
+        }
+
         .content-area {
             padding: 2rem;
         }
@@ -219,7 +220,7 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                     </li>
                     <?php if ($is_logged_in): ?>
                         <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
-                        <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
+                        <li><a class="dropdown-item" href="auth/settings.php"><i class="bi bi-gear me-2"></i>Settings</a></li>
                         <li><a class="dropdown-item" href="#"><i class="bi bi-shield-check me-2"></i>Security (2FA)</a></li>
                         <li><a class="dropdown-item" href="#"><i class="bi bi-question-circle me-2"></i>Help</a></li>
                         <li><hr class="dropdown-divider"></li>
@@ -635,14 +636,10 @@ $welcome_msg = $ObjFncs->getMsg('msg');
         function navigateTo(page) {
             console.log('Navigating to:', page);
             
-            // Remove active class from all nav links
-            document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
-            
             switch(page) {
                 case 'dashboard':
-                    // Reload dashboard
-                    window.location.href = 'dashboard.php';
-                    break;
+                    // Stay on dashboard
+                    return;
                 case 'my-notes':
                     // Navigate to my notes
                     window.location.href = 'notes/my-notes.php';
@@ -660,22 +657,7 @@ $welcome_msg = $ObjFncs->getMsg('msg');
             }
         }
         
-        // Sidebar navigation (legacy support)
-        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-            link.addEventListener('click', function(e) {
-                console.log('Navigation clicked');
-                // Don't prevent default for buttons
-                if (this.tagName !== 'BUTTON') {
-                    e.preventDefault();
-                }
-                
-                // Remove active class from all links
-                document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
-                
-                // Add active class to clicked link
-                this.classList.add('active');
-            });
-        });
+
         
         // Search functionality
         document.querySelector('.search-box').addEventListener('input', function() {

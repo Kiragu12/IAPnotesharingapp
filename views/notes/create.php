@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             'file_name' => $file['name'],
                             'file_type' => $file['type'],
                             'file_size' => $file['size'],
-                            'is_public' => isset($_POST['is_public']) ? 1 : 0,
+                            'is_public' => 1, // Always make notes public
                             'status' => 'published'
                         ];
                         
@@ -95,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'title' => $title,
                     'content' => $content,
                     'note_type' => 'text',
-                    'is_public' => isset($_POST['is_public']) ? 1 : 0,
+                    'is_public' => 1, // Always make notes public
                     'status' => 'published'
                 ];
                 
@@ -221,7 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="../dashboard.php">
+            <a class="navbar-brand fw-bold" href="../dashboard.php" onclick="sessionStorage.setItem('selectedNavPage', 'my-notes');">
                 <i class="bi bi-journal-text me-2"></i>NotesShare Academy
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -230,7 +230,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="../dashboard.php">
+                        <a class="nav-link" href="../dashboard.php" onclick="sessionStorage.setItem('selectedNavPage', 'my-notes');">
                             <i class="bi bi-house-door me-1"></i>Dashboard
                         </a>
                     </li>
@@ -252,6 +252,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </ul>
                 <div class="navbar-nav">
                     <span class="navbar-text me-3">Welcome, <?php echo htmlspecialchars($user_name); ?>!</span>
+                    <a class="nav-link" href="../auth/settings.php">
+                        <i class="bi bi-gear me-1"></i>Settings
+                    </a>
+                    <a class="nav-link text-danger" href="../logout.php">
+                        <i class="bi bi-box-arrow-right me-1"></i>Logout
+                    </a>
                 </div>
             </div>
         </div>
@@ -361,17 +367,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
 
                             <!-- Options -->
-                            <div class="row mb-4">
-                                <div class="col-md-6">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="is_public" name="is_public">
-                                        <label class="form-check-label fw-bold" for="is_public">
-                                            <i class="bi bi-globe me-1"></i>Make this note public
-                                        </label>
-                                        <div class="form-text">Public notes can be seen by all users</div>
-                                    </div>
-                                </div>
-                            </div>
+
 
                             <!-- Submit Buttons -->
                             <div class="d-flex gap-3">

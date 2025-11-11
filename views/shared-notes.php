@@ -32,13 +32,17 @@ $where_clauses = ["notes.is_public = 1"];
 $params = [];
 
 if (!empty($search)) {
-    $where_clauses[] = "(notes.title LIKE :search OR notes.content LIKE :search OR notes.tags LIKE :search OR users.full_name LIKE :search)";
-    $params[':search'] = "%$search%";
+    $search_term = "%$search%";
+    $where_clauses[] = "(notes.title LIKE ? OR notes.content LIKE ? OR notes.tags LIKE ? OR users.full_name LIKE ?)";
+    $params[] = $search_term;
+    $params[] = $search_term;
+    $params[] = $search_term;
+    $params[] = $search_term;
 }
 
 if (!empty($filter_type)) {
-    $where_clauses[] = "notes.note_type = :type";
-    $params[':type'] = $filter_type;
+    $where_clauses[] = "notes.note_type = ?";
+    $params[] = $filter_type;
 }
 
 $where_sql = implode(' AND ', $where_clauses);
@@ -75,10 +79,10 @@ try {
     
     // Get statistics
     $stats = [
-        'total_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE is_public = 1")['count'],
-        'text_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE is_public = 1 AND note_type = 'text'")['count'],
-        'file_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE is_public = 1 AND note_type = 'file'")['count'],
-        'total_users' => $db->fetchOne("SELECT COUNT(DISTINCT user_id) as count FROM notes WHERE is_public = 1")['count']
+        'total_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE is_public = ?", [1])['count'],
+        'text_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE is_public = ? AND note_type = ?", [1, 'text'])['count'],
+        'file_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE is_public = ? AND note_type = ?", [1, 'file'])['count'],
+        'total_users' => $db->fetchOne("SELECT COUNT(DISTINCT user_id) as count FROM notes WHERE is_public = ?", [1])['count']
     ];
     
 } catch (Exception $e) {
@@ -214,6 +218,15 @@ $error_msg = $ObjFncs->getMsg('errors');
             box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
         }
         
+        /* Search highlighting styles */
+        mark {
+            background: #fff3cd !important;
+            color: #856404 !important;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+        
         .btn-gradient {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
@@ -297,7 +310,7 @@ $error_msg = $ObjFncs->getMsg('errors');
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="dashboard.php">
+            <a class="navbar-brand fw-bold" href="dashboard.php" onclick="sessionStorage.setItem('selectedNavPage', 'shared-notes');">
                 <i class="bi bi-journal-text me-2"></i>NotesShare Academy
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -306,7 +319,7 @@ $error_msg = $ObjFncs->getMsg('errors');
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="dashboard.php">
+                        <a class="nav-link" href="dashboard.php" onclick="sessionStorage.setItem('selectedNavPage', 'shared-notes');">
                             <i class="bi bi-house-door me-1"></i>Dashboard
                         </a>
                     </li>
@@ -328,6 +341,12 @@ $error_msg = $ObjFncs->getMsg('errors');
                 </ul>
                 <div class="navbar-nav">
                     <span class="navbar-text me-3">Welcome, <?php echo htmlspecialchars($user_name); ?>!</span>
+                    <a class="nav-link" href="auth/settings.php">
+                        <i class="bi bi-gear me-1"></i>Settings
+                    </a>
+                    <a class="nav-link text-danger" href="logout.php">
+                        <i class="bi bi-box-arrow-right me-1"></i>Logout
+                    </a>
                 </div>
             </div>
         </div>
@@ -383,7 +402,7 @@ $error_msg = $ObjFncs->getMsg('errors');
                     <div class="position-relative">
                         <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
                         <input type="text" name="search" class="form-control search-input ps-5" 
-                               placeholder="Search notes, content, or authors..." value="<?php echo htmlspecialchars($search); ?>">
+                               placeholder="Try: python, calculus, shakespeare, physics..." value="<?php echo htmlspecialchars($search); ?>">
                     </div>
                 </div>
                 <div class="col-md-2">
@@ -541,6 +560,67 @@ $error_msg = $ObjFncs->getMsg('errors');
                 bsAlert.close();
             });
         }, 5000);
+
+        // Enhanced search functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.querySelector('input[name="search"]');
+            const searchForm = document.querySelector('.search-section form');
+            let searchTimeout;
+
+            // Real-time search (search as you type with debouncing)
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(function() {
+                        // Search with any length input (even 1 character)
+                        if (searchInput.value.length >= 1 || searchInput.value.length === 0) {
+                            searchForm.submit();
+                        }
+                    }, 600); // Faster response - 600ms after user stops typing
+                });
+
+                // Submit on Enter key
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        clearTimeout(searchTimeout);
+                        searchForm.submit();
+                    }
+                });
+            }
+
+            // Auto-submit when filter dropdowns change
+            const filterSelects = document.querySelectorAll('select[name="type"], select[name="sort"]');
+            filterSelects.forEach(select => {
+                select.addEventListener('change', function() {
+                    searchForm.submit();
+                });
+            });
+
+            // Highlight search terms in results
+            const searchTerm = "<?php echo htmlspecialchars($search); ?>";
+            if (searchTerm.length > 0) {
+                highlightSearchTerms(searchTerm);
+            }
+        });
+
+        // Function to highlight search terms in note titles and content
+        function highlightSearchTerms(term) {
+            // Target the correct elements in note cards
+            const noteElements = document.querySelectorAll('.card-title, .card-text p');
+            const regex = new RegExp(`(${escapeRegex(term)})`, 'gi');
+            
+            noteElements.forEach(element => {
+                if (element.textContent.toLowerCase().includes(term.toLowerCase())) {
+                    element.innerHTML = element.innerHTML.replace(regex, '<mark>$1</mark>');
+                }
+            });
+        }
+
+        // Helper function to escape special characters in regex
+        function escapeRegex(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
     </script>
 </body>
 </html>

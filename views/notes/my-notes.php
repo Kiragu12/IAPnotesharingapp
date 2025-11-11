@@ -144,7 +144,7 @@ $total_count = count($notes);
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="../auth/dashboard.php">
+            <a class="navbar-brand fw-bold" href="../dashboard.php" onclick="sessionStorage.setItem('selectedNavPage', 'my-notes');">
                 <i class="bi bi-journal-bookmark me-2"></i><?php echo htmlspecialchars($conf['site_name']); ?>
             </a>
             <div class="navbar-nav ms-auto">
@@ -154,8 +154,11 @@ $total_count = count($notes);
                 <a class="nav-link active" href="my-notes.php">
                     <i class="bi bi-journals me-1"></i>My Notes
                 </a>
-                <a class="nav-link" href="../auth/dashboard.php">
+                <a class="nav-link" href="../dashboard.php" onclick="sessionStorage.setItem('selectedNavPage', 'my-notes');">
                     <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                </a>
+                <a class="nav-link" href="../auth/settings.php">
+                    <i class="bi bi-gear me-1"></i>Settings
                 </a>
                 <a class="nav-link" href="../logout.php">
                     <i class="bi bi-box-arrow-right me-1"></i>Logout

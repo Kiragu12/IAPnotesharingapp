@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_note'])) {
         'summary' => $_POST['summary'] ?? '',
         'category_id' => !empty($_POST['category_id']) ? (int)$_POST['category_id'] : null,
         'tags' => $_POST['tags'] ?? '',
-        'is_public' => isset($_POST['is_public']),
+        'is_public' => true, // Always keep notes public
         'status' => $_POST['status'] ?? 'draft'
     ];
     
@@ -126,7 +126,7 @@ $error_messages = $ObjFncs->getMsg('errors');
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="../auth/dashboard.php">
+            <a class="navbar-brand fw-bold" href="../dashboard.php" onclick="sessionStorage.setItem('selectedNavPage', 'my-notes');">
                 <i class="bi bi-journal-bookmark me-2"></i><?php echo htmlspecialchars($conf['site_name']); ?>
             </a>
             <div class="navbar-nav ms-auto">
@@ -139,8 +139,11 @@ $error_messages = $ObjFncs->getMsg('errors');
                 <a class="nav-link" href="view.php?id=<?php echo $note['id']; ?>">
                     <i class="bi bi-eye me-1"></i>View Note
                 </a>
-                <a class="nav-link" href="../auth/dashboard.php">
+                <a class="nav-link" href="../dashboard.php" onclick="sessionStorage.setItem('selectedNavPage', 'my-notes');">
                     <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                </a>
+                <a class="nav-link" href="../auth/settings.php">
+                    <i class="bi bi-gear me-1"></i>Settings
                 </a>
                 <a class="nav-link" href="../logout.php">
                     <i class="bi bi-box-arrow-right me-1"></i>Logout
@@ -258,16 +261,7 @@ $error_messages = $ObjFncs->getMsg('errors');
 
                             <!-- Options -->
                             <div class="row mb-4">
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="is_public" name="is_public" <?php echo $note['is_public'] ? 'checked' : ''; ?>>
-                                        <label class="form-check-label" for="is_public">
-                                            <i class="bi bi-globe me-1"></i>Make this note public
-                                        </label>
-                                        <div class="form-text">Public notes can be viewed by all users</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <div class="text-muted small">
                                         <strong>Current Status:</strong>
                                         <span class="badge bg-<?php echo $note['status'] === 'published' ? 'success' : ($note['status'] === 'draft' ? 'warning' : 'secondary'); ?>">
