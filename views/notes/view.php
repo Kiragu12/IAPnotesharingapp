@@ -295,10 +295,9 @@ $error_msg = $ObjFncs->getMsg('errors');
                             
                             <div class="col-md-4 text-end">
                                 <?php if (($note['note_type'] ?? 'text') === 'file' && !empty($note['file_path'])): ?>
-                                    <a href="../../<?php echo htmlspecialchars($note['file_path']); ?>" 
+                                    <a href="download.php?id=<?php echo $note['id']; ?>" 
                                        class="btn download-btn mb-2 d-block"
-                                       target="_blank"
-                                       download="<?php echo htmlspecialchars($note['file_name'] ?? 'download'); ?>">
+                                       target="_blank">
                                         <i class="bi bi-download me-2"></i>Download File
                                     </a>
                                     <small class="text-muted">

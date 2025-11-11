@@ -288,30 +288,66 @@ class NotesController {
      */
     public function deleteNote($note_id, $user_id) {
         try {
-            // Check if user owns the note
-            $existing_note = $this->db->fetchOne(
-                "SELECT id FROM notes WHERE id = :note_id AND user_id = :user_id",
+            // Get note details including file information
+            $note = $this->db->fetchOne(
+                "SELECT id, note_type, file_path FROM notes WHERE id = :note_id AND user_id = :user_id",
                 [':note_id' => $note_id, ':user_id' => $user_id]
             );
             
-            if (!$existing_note) {
+            if (!$note) {
                 throw new Exception('Note not found or you do not have permission to delete it');
             }
             
+            // Delete the database record first
             $sql = "DELETE FROM notes WHERE id = :note_id AND user_id = :user_id";
             $result = $this->db->execute($sql, [':note_id' => $note_id, ':user_id' => $user_id]);
             
-            if ($result) {
-                $this->ObjFncs->setMsg('success', 'Note deleted successfully!', 'success');
-                return true;
-            } else {
-                throw new Exception('Failed to delete note');
+            if (!$result) {
+                throw new Exception('Failed to delete note from database');
             }
+            
+            // If it's a file note, delete the physical file
+            if ($note['note_type'] === 'file' && !empty($note['file_path'])) {
+                $this->deletePhysicalFile($note['file_path']);
+            }
+            
+            $this->ObjFncs->setMsg('success', 'Note and associated files deleted successfully!', 'success');
+            return true;
             
         } catch (Exception $e) {
             error_log("Delete Note Error: " . $e->getMessage());
             $this->ObjFncs->setMsg('errors', $e->getMessage(), 'danger');
             return false;
+        }
+    }
+    
+    /**
+     * Delete physical file from server
+     */
+    private function deletePhysicalFile($file_path) {
+        try {
+            // Construct the full file path
+            $full_path = __DIR__ . '/../../' . $file_path;
+            
+            // Security check - ensure file is within uploads directory
+            $uploads_dir = realpath(__DIR__ . '/../../uploads/');
+            $file_real_path = realpath($full_path);
+            
+            if ($file_real_path && strpos($file_real_path, $uploads_dir) === 0) {
+                if (file_exists($full_path)) {
+                    if (unlink($full_path)) {
+                        error_log("Successfully deleted file: " . $file_path);
+                    } else {
+                        error_log("Failed to delete file: " . $file_path);
+                    }
+                } else {
+                    error_log("File not found for deletion: " . $file_path);
+                }
+            } else {
+                error_log("Security violation: Attempted to delete file outside uploads directory: " . $file_path);
+            }
+        } catch (Exception $e) {
+            error_log("Error deleting physical file: " . $e->getMessage());
         }
     }
     

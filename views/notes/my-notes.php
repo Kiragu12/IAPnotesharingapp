@@ -21,6 +21,17 @@ $ObjFncs = new fncs();
 $user_id = $_SESSION['user_id'];
 $user_name = $_SESSION['full_name'] ?? 'User';
 
+// Handle note deletion
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete') {
+    $note_id = $_POST['note_id'] ?? null;
+    if ($note_id && is_numeric($note_id)) {
+        $notesController->deleteNote($note_id, $user_id);
+    }
+    // Redirect to prevent resubmission
+    header('Location: my-notes.php');
+    exit();
+}
+
 // Get filter parameters
 $status_filter = $_GET['status'] ?? null;
 $search = $_GET['search'] ?? '';
@@ -300,6 +311,11 @@ $total_count = count($notes);
                                             <li><a class="dropdown-item" href="view.php?id=<?php echo $note['id']; ?>">
                                                 <i class="bi bi-eye me-2"></i>View
                                             </a></li>
+                                            <?php if ($note['note_type'] === 'file'): ?>
+                                                <li><a class="dropdown-item" href="download.php?id=<?php echo $note['id']; ?>" target="_blank">
+                                                    <i class="bi bi-download me-2"></i>Download File
+                                                </a></li>
+                                            <?php endif; ?>
                                             <li><a class="dropdown-item" href="edit.php?id=<?php echo $note['id']; ?>">
                                                 <i class="bi bi-pencil me-2"></i>Edit
                                             </a></li>
@@ -329,6 +345,16 @@ $total_count = count($notes);
                                             <?php echo ucfirst($note['status']); ?>
                                         </span>
                                         
+                                        <?php if ($note['note_type'] === 'file'): ?>
+                                            <span class="badge bg-primary">
+                                                <i class="bi bi-file-earmark me-1"></i>File
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge bg-info">
+                                                <i class="bi bi-file-text me-1"></i>Text
+                                            </span>
+                                        <?php endif; ?>
+                                        
                                         <?php if ($note['is_public']): ?>
                                             <span class="badge bg-success">
                                                 <i class="bi bi-globe me-1"></i>Public
@@ -344,6 +370,12 @@ $total_count = count($notes);
                                         
                                         <i class="bi bi-eye me-1"></i>
                                         <?php echo $note['view_count']; ?> views
+                                        
+                                        <?php if ($note['note_type'] === 'file' && $note['file_size']): ?>
+                                            <span class="mx-2">•</span>
+                                            <i class="bi bi-hdd me-1"></i>
+                                            <?php echo number_format($note['file_size'] / 1024, 1); ?> KB
+                                        <?php endif; ?>
                                     </small>
                                 </div>
 

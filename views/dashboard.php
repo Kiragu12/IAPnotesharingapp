@@ -533,7 +533,7 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                                                                 <li><a class="dropdown-item" href="notes/view.php?id=<?php echo $note['id']; ?>"><i class="bi bi-eye me-2"></i>View</a></li>
                                                                 <li><a class="dropdown-item" href="notes/edit.php?id=<?php echo $note['id']; ?>"><i class="bi bi-pencil me-2"></i>Edit</a></li>
                                                                 <?php if ($note['note_type'] === 'file' && $note['file_path']): ?>
-                                                                    <li><a class="dropdown-item" href="../<?php echo htmlspecialchars($note['file_path']); ?>" target="_blank"><i class="bi bi-download me-2"></i>Download</a></li>
+                                                                    <li><a class="dropdown-item" href="notes/download.php?id=<?php echo $note['id']; ?>" target="_blank"><i class="bi bi-download me-2"></i>Download</a></li>
                                                                 <?php endif; ?>
                                                                 <li><hr class="dropdown-divider"></li>
                                                                 <li><a class="dropdown-item text-danger" href="#" onclick="deleteNote(<?php echo $note['id']; ?>)"><i class="bi bi-trash me-2"></i>Delete</a></li>
