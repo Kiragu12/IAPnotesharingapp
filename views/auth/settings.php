@@ -128,11 +128,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-        }
+       body {
+  background-color: #f9f9f9;
+  color: #222;
+  transition: background-color 0.3s, color 0.3s;
+    }
+
+/* Dark theme */
+      body.dark-mode {
+           background-color: #1e1e1e;
+            color: #ddd;
+  } 
+
+/* Optional tweaks to match dashboard style */
+    .dark-mode .navbar,
+    .dark-mode .sidebar,
+    .dark-mode .card {
+     background-color: #2b2b2b !important;
+     color: #ddd;
+    }
+
+    .dark-mode .form-check-label {
+      color: #ddd;
+     }
         
         .navbar {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
@@ -320,6 +338,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                         </div>
                     </div>
                 </div>
+            </div>
+            <div class="form-check form-switch mt-3 ms-3">
+              <input class="form-check-input" type="checkbox" id="themeSwitch">
+                 <label class="form-check-label" for="themeSwitch">
+                    <i class="bi bi-brightness-high me-2" id="themeIcon"></i>
+                    <span id="themeLabel">Light Mode</span>
+                 </label>
             </div>
             
             <!-- Settings Forms -->
@@ -568,6 +593,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                     card.style.transform = 'translateY(0)';
                 }, index * 100);
             });
+        });
+        // Theme Switcher
+        const themeSwitch = document.getElementById('themeSwitch');
+        const themeIcon = document.getElementById('themeIcon');
+        const themeLabel = document.getElementById('themeLabel');
+        themeSwitch.addEventListener('change', function() {
+            if (this.checked) {
+                document.body.classList.add('dark-mode');
+                themeIcon.classList.remove('bi-brightness-high');
+                themeIcon.classList.add('bi-moon');
+                themeLabel.textContent = 'Dark Mode';
+            } else {
+                document.body.classList.remove('dark-mode');
+                themeIcon.classList.remove('bi-moon');
+                themeIcon.classList.add('bi-brightness-high');
+                themeLabel.textContent = 'Light Mode';
+            }
         });
     </script>
 </body>
