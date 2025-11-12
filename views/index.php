@@ -14,6 +14,12 @@ try {
     
     // Get any signup success messages
     $signup_message = $ObjFncs->getMsg('signup_success') ?: '';
+    
+    // Get account deletion message from URL parameter
+    $account_deleted_message = '';
+    if (isset($_GET['message']) && $_GET['message'] === 'account_deleted') {
+        $account_deleted_message = 'Your account has been successfully deleted. Thank you for using NotesShare Academy.';
+    }
 } catch (Exception $e) {
     // If there's an error loading dependencies, continue without messages
     $signup_message = '';
@@ -362,6 +368,24 @@ try {
                                 <div class="flex-grow-1">
                                     <h5 class="alert-heading mb-1">Account Created Successfully! 🎉</h5>
                                     <p class="mb-0"><?= htmlspecialchars($signup_message) ?></p>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($account_deleted_message)): ?>
+                <!-- Account Deletion Success Message -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="alert alert-info alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 15px; border: none; background: linear-gradient(135deg, #cce7ff 0%, #b3d9ff 100%);">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-check-circle-fill me-3" style="font-size: 2rem; color: #0066cc;"></i>
+                                <div class="flex-grow-1">
+                                    <h5 class="alert-heading mb-1">Account Deleted Successfully</h5>
+                                    <p class="mb-0"><?= htmlspecialchars($account_deleted_message) ?></p>
                                 </div>
                             </div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>

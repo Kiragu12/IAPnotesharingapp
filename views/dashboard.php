@@ -2,6 +2,11 @@
 // Start session
 session_start();
 
+// Prevent page caching to ensure fresh data
+header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1
+header("Pragma: no-cache"); // HTTP 1.0
+header("Expires: 0"); // Proxies
+
 // Load classes for message handling
 require_once '../app/Services/Global/fncs.php';
 require_once '../config/conf.php';
@@ -74,6 +79,43 @@ try {
 
 // Check for welcome messages
 $welcome_msg = $ObjFncs->getMsg('msg');
+$first_login = false; // Set to false by default, can be modified by login logic
+
+// Check for URL parameter messages
+$success_msg = '';
+$success_icon = 'bi-check-circle';
+$error_msg = '';
+if (isset($_GET['message'])) {
+    switch ($_GET['message']) {
+        case 'note_deleted':
+            $success_msg = 'Note successfully deleted!';
+            $success_icon = 'bi-trash3';
+            break;
+        case 'note_created':
+            $success_msg = 'Note successfully created!';
+            $success_icon = 'bi-plus-circle';
+            break;
+        case 'note_updated':
+            $success_msg = 'Note successfully updated!';
+            $success_icon = 'bi-pencil-square';
+            break;
+    }
+}
+if (isset($_GET['error'])) {
+    switch ($_GET['error']) {
+        case 'invalid_note_id':
+            $error_msg = 'Invalid note ID. The note may have already been deleted.';
+            break;
+        case 'delete_failed':
+            $error_msg = 'Failed to delete the note. Please try again.';
+            break;
+        case 'note_not_found':
+            $error_msg = 'Note not found. It may have been deleted or you do not have permission to access it.';
+            break;
+        default:
+            $error_msg = 'An error occurred. Please try again.';
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -351,6 +393,22 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                         </div>';
                     }
                     
+                    // Display success messages
+                    if (!empty($success_msg)) {
+                        echo '<div class="alert alert-success alert-dismissible fade show" role="alert" style="margin-bottom: 20px;">
+                            <i class="bi ' . $success_icon . ' me-2"></i>' . $success_msg . '
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>';
+                    }
+                    
+                    // Display error messages
+                    if (!empty($error_msg)) {
+                        echo '<div class="alert alert-warning alert-dismissible fade show" role="alert" style="margin-bottom: 20px;">
+                            <i class="bi bi-exclamation-triangle me-2"></i>' . $error_msg . '
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>';
+                    }
+                    
                     // Show first login welcome
                     if ($first_login) {
                         echo '<div class="alert alert-info alert-dismissible fade show" role="alert" style="margin-bottom: 20px;">
@@ -371,7 +429,7 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                                     <a href="notes/create.php" class="quick-action-btn">
                                         <i class="bi bi-plus-circle me-2"></i>Create Note
                                     </a>
-                                    <a href="notes/my-notes.php" class="quick-action-btn">
+                                    <a href="#my-notes-section" class="quick-action-btn" onclick="scrollToMyNotes()"
                                         <i class="bi bi-journals me-2"></i>My Notes
                                     </a>
                                     <a href="shared-notes.php" class="quick-action-btn">
@@ -445,6 +503,7 @@ $welcome_msg = $ObjFncs->getMsg('msg');
 
                     <div class="row">
                         <!-- Recent Notes with Enhanced Bootstrap Cards -->
+                        <div id="my-notes-section">
                         <div class="col-lg-8">
                             <div class="card border-0 shadow-sm">
                                 <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
@@ -535,7 +594,6 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                                                                 <?php if ($note['note_type'] === 'file' && $note['file_path']): ?>
                                                                     <li><a class="dropdown-item" href="notes/download.php?id=<?php echo $note['id']; ?>" target="_blank"><i class="bi bi-download me-2"></i>Download</a></li>
                                                                 <?php endif; ?>
-                                                                <li><hr class="dropdown-divider"></li>
                                                                 <li><a class="dropdown-item text-danger" href="#" onclick="deleteNote(<?php echo $note['id']; ?>)"><i class="bi bi-trash me-2"></i>Delete</a></li>
                                                             </ul>
                                                         </div>
@@ -698,7 +756,8 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                     return;
                 case 'my-notes':
                     // Navigate to my notes
-                    window.location.href = 'notes/my-notes.php';
+                    // Stay on dashboard and scroll to notes section
+                    document.getElementById('my-notes-section')?.scrollIntoView({ behavior: 'smooth' });
                     break;
                 case 'shared-notes':
                     // Navigate to shared notes
@@ -773,7 +832,7 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                 // Create a form to submit the delete request
                 const form = document.createElement('form');
                 form.method = 'POST';
-                form.action = 'notes/my-notes.php';
+                form.action = 'notes/delete-handler.php';
                 
                 const noteIdInput = document.createElement('input');
                 noteIdInput.type = 'hidden';
@@ -785,6 +844,16 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                 actionInput.name = 'action';
                 actionInput.value = 'delete';
                 
+                // Preserve current search parameters
+                const currentSearch = new URLSearchParams(window.location.search).get('search');
+                if (currentSearch) {
+                    const searchInput = document.createElement('input');
+                    searchInput.type = 'hidden';
+                    searchInput.name = 'current_search';
+                    searchInput.value = currentSearch;
+                    form.appendChild(searchInput);
+                }
+                
                 form.appendChild(noteIdInput);
                 form.appendChild(actionInput);
                 document.body.appendChild(form);
@@ -792,8 +861,22 @@ $welcome_msg = $ObjFncs->getMsg('msg');
             }
         }
         
+        // Scroll to notes section
+        function scrollToMyNotes() {
+            document.getElementById('my-notes-section')?.scrollIntoView({ behavior: 'smooth' });
+        }
+        
         // Add smooth animations on load
         document.addEventListener('DOMContentLoaded', function() {
+            // Force refresh if coming from an update
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('message') && urlParams.has('t')) {
+                // Remove the timestamp parameter to clean the URL
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.delete('t');
+                window.history.replaceState({}, '', newUrl);
+            }
+            
             const cards = document.querySelectorAll('.stats-card, .note-card');
             cards.forEach((card, index) => {
                 card.style.opacity = '0';
@@ -805,6 +888,18 @@ $welcome_msg = $ObjFncs->getMsg('msg');
                     card.style.transform = 'translateY(0)';
                 }, index * 100);
             });
+            
+            // Auto-scroll to notes section if there's a hash in URL or after actions
+            if (window.location.hash === '#my-notes-section' || 
+                window.location.search.includes('message=note_deleted') ||
+                window.location.search.includes('message=note_updated') ||
+                window.location.search.includes('message=note_created') ||
+                window.location.search.includes('error=delete_failed') ||
+                window.location.search.includes('error=invalid_note_id')) {
+                setTimeout(() => {
+                    scrollToMyNotes();
+                }, 500); // Wait for animations to start
+            }
         });
         
         // Real-time clock in welcome banner

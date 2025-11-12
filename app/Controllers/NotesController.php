@@ -9,8 +9,11 @@ class NotesController {
     private $ObjFncs;
     
     public function __construct() {
-        // Avoid starting session if already started
+        // Ensure session is started and properly configured
         if (session_status() === PHP_SESSION_NONE) {
+            // Configure session before starting
+            ini_set('session.cookie_httponly', 1);
+            ini_set('session.use_only_cookies', 1);
             session_start();
         }
         
@@ -390,6 +393,11 @@ class NotesController {
 
 // Handle AJAX requests
 if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    // Ensure session is started at the global level
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
     // Ensure config is available
     global $conf;
 
@@ -398,9 +406,9 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' &
     // Allow dev-only unauthenticated search when explicitly enabled in config
     $devAllow = isset($conf['dev_allow_unauth_search']) && $conf['dev_allow_unauth_search'];
 
-    // If user not logged in and action is not allowed by dev flag, block
+    // Check authentication - if not logged in, just return an error
     if (!isset($_SESSION['user_id']) && !($devAllow && $action === 'search')) {
-        echo json_encode(['success' => false, 'message' => 'User not logged in']);
+        echo json_encode(['success' => false, 'message' => 'Authentication required. Please refresh the page and try again.']);
         exit;
     }
 

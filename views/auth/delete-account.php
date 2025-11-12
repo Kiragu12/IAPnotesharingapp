@@ -18,6 +18,32 @@ $db = new Database($conf);
 $ObjFncs = new fncs();
 $user_id = (int) $_SESSION['user_id'];
 
+// Function to delete physical files
+function deletePhysicalFile($file_path) {
+    try {
+        // Construct the full file path
+        $full_path = __DIR__ . '/../../' . $file_path;
+        
+        // Security check - ensure file is within uploads directory
+        $uploads_dir = realpath(__DIR__ . '/../../uploads/');
+        $file_real_path = realpath($full_path);
+        
+        if ($file_real_path && strpos($file_real_path, $uploads_dir) === 0) {
+            if (file_exists($full_path)) {
+                if (unlink($full_path)) {
+                    error_log("Account deletion: Successfully deleted file: " . $file_path);
+                } else {
+                    error_log("Account deletion: Failed to delete file: " . $file_path);
+                }
+            }
+        } else {
+            error_log("Account deletion: Security violation attempted for file: " . $file_path);
+        }
+    } catch (Exception $e) {
+        error_log("Account deletion: Error deleting file: " . $e->getMessage());
+    }
+}
+
 // Handle account deletion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
     $password = $_POST['password'] ?? '';
@@ -33,6 +59,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
             if ($user && password_verify($password, $user['password'])) {
                 // Delete user data in proper order (foreign keys)
                 $db->beginTransaction();
+                
+                // First, get all user's file notes for cleanup
+                $file_notes = $db->fetchAll('SELECT file_path FROM notes WHERE user_id = ? AND note_type = "file" AND file_path IS NOT NULL', [$user_id]);
+                
+                // Delete physical files
+                foreach ($file_notes as $note) {
+                    deletePhysicalFile($note['file_path']);
+                }
                 
                 // Delete notes
                 $db->query('DELETE FROM notes WHERE user_id = ?', [$user_id]);

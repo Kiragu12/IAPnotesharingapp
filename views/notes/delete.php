@@ -24,7 +24,7 @@ if ($note_id && is_numeric($note_id)) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
     <body>
-        <form id="deleteForm" method="POST" action="my-notes.php">
+        <form id="deleteForm" method="POST" action="delete-handler.php">
             <input type="hidden" name="note_id" value="<?php echo htmlspecialchars($note_id); ?>">
             <input type="hidden" name="action" value="delete">
         </form>
@@ -34,16 +34,16 @@ if ($note_id && is_numeric($note_id)) {
             if (confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
                 document.getElementById('deleteForm').submit();
             } else {
-                // Redirect back to my-notes if user cancels
-                window.location.href = 'my-notes.php';
+                // Redirect back to dashboard if user cancels
+                window.location.href = '../dashboard.php';
             }
         </script>
     </body>
     </html>
     <?php
 } else {
-    // Invalid note ID, redirect to my-notes
-    header('Location: my-notes.php?error=invalid_note_id');
+    // Invalid note ID, redirect to dashboard
+    header('Location: ../dashboard.php?error=invalid_note_id');
     exit();
 }
 ?>

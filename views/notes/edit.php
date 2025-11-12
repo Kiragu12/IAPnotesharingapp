@@ -13,7 +13,7 @@ if (!isset($_SESSION['user_id'])) {
 
 // Check if note ID is provided
 if (!isset($_GET['id'])) {
-    header('Location: my-notes.php');
+    header('Location: ../dashboard.php');
     exit();
 }
 
@@ -33,7 +33,7 @@ $db = new Database($conf);
 $note = $notesController->getNote($note_id, $user_id);
 
 if (!$note || $note['user_id'] != $user_id) {
-    header('Location: my-notes.php?error=note_not_found');
+    header('Location: ../dashboard.php?error=note_not_found');
     exit();
 }
 
@@ -53,13 +53,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_note'])) {
         'summary' => $_POST['summary'] ?? '',
         'category_id' => !empty($_POST['category_id']) ? (int)$_POST['category_id'] : null,
         'tags' => $_POST['tags'] ?? '',
-        'is_public' => true, // Always keep notes public
+        'is_public' => isset($_POST['is_public']) && $_POST['is_public'] === '1',
         'status' => $_POST['status'] ?? 'draft'
     ];
     
     $result = $notesController->updateNote($note_id, $data, $user_id);
     if ($result) {
-        // Refresh note data
+        // Redirect to dashboard with success message and timestamp to prevent caching
+        $redirect_url = '../dashboard.php?message=note_updated&t=' . time() . '#my-notes-section';
+        header('Location: ' . $redirect_url);
+        exit();
+    } else {
+        // Refresh note data if update failed
         $note = $notesController->getNote($note_id, $user_id);
     }
 }
@@ -133,7 +138,7 @@ $error_messages = $ObjFncs->getMsg('errors');
                 <a class="nav-link" href="create.php">
                     <i class="bi bi-plus-circle me-1"></i>Create Note
                 </a>
-                <a class="nav-link" href="my-notes.php">
+                <a class="nav-link" href="../dashboard.php">
                     <i class="bi bi-journals me-1"></i>My Notes
                 </a>
                 <a class="nav-link" href="view.php?id=<?php echo $note['id']; ?>">
@@ -259,9 +264,18 @@ $error_messages = $ObjFncs->getMsg('errors');
                                 <div class="form-text">e.g., math, calculus, derivatives, limits</div>
                             </div>
 
-                            <!-- Options -->
-                            <div class="row mb-4">
-                                <div class="col-md-12">
+                            <!-- Privacy Settings -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="is_public" name="is_public" value="1" <?php echo $note['is_public'] ? 'checked' : ''; ?>>
+                                        <label class="form-check-label" for="is_public">
+                                            <i class="bi bi-globe me-1"></i>Make Note Public
+                                        </label>
+                                        <div class="form-text">Public notes can be viewed by other users</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
                                     <div class="text-muted small">
                                         <strong>Current Status:</strong>
                                         <span class="badge bg-<?php echo $note['status'] === 'published' ? 'success' : ($note['status'] === 'draft' ? 'warning' : 'secondary'); ?>">
@@ -284,7 +298,7 @@ $error_messages = $ObjFncs->getMsg('errors');
                                     </a>
                                 </div>
                                 <div>
-                                    <a href="my-notes.php" class="btn btn-outline-secondary">
+                                    <a href="../dashboard.php" class="btn btn-outline-secondary">
                                         <i class="bi bi-x-circle me-1"></i>Cancel
                                     </a>
                                     <button type="submit" name="update_note" class="btn btn-primary" id="submitBtn">

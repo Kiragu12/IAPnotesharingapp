@@ -225,7 +225,7 @@ $error_msg = $ObjFncs->getMsg('errors');
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="my-notes.php">
+                        <a class="nav-link" href="../dashboard.php">
                             <i class="bi bi-folder me-1"></i>My Notes
                         </a>
                     </li>
