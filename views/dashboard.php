@@ -60,8 +60,7 @@ try {
     // Get user statistics
     $stats = [
         'total_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE user_id = ?", [$user_id])['count'],
-        'public_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE user_id = ? AND is_public = ?", [$user_id, 1])['count'],
-        'private_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE user_id = ? AND is_public = ?", [$user_id, 0])['count']
+        'public_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE user_id = ? AND is_public = ?", [$user_id, 1])['count']
     ];
     
     // Get navigation counters
@@ -73,7 +72,7 @@ try {
 } catch (Exception $e) {
     error_log("Dashboard error: " . $e->getMessage());
     $user_notes = [];
-    $stats = ['total_notes' => 0, 'public_notes' => 0, 'private_notes' => 0];
+    $stats = ['total_notes' => 0, 'public_notes' => 0];
     $nav_counters = ['my_notes_count' => 0, 'shared_notes_count' => 0];
 }
 
@@ -481,24 +480,7 @@ if (isset($_GET['error'])) {
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="card stats-card border-0 h-100">
-                                <div class="card-body text-center">
-                                    <div class="stats-icon bg-info mx-auto mb-3">
-                                        <i class="bi bi-lock"></i>
-                                    </div>
-                                    <div class="row align-items-center">
-                                        <div class="col">
-                                            <h3 class="fw-bold text-info mb-1"><?php echo $stats['private_notes']; ?></h3>
-                                            <p class="text-muted mb-0 small">Private Notes</p>
-                                        </div>
-                                    </div>
-                                    <div class="progress mt-2" style="height: 4px;">
-                                        <div class="progress-bar bg-info" style="width: <?php echo min(100, $stats['private_notes'] * 10); ?>%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+
                     </div>
 
                     <div class="row">
@@ -628,113 +610,7 @@ if (isset($_GET['error'])) {
                             </div>
                         </div>
 
-                        <!-- Recent Activity with Enhanced Bootstrap Components -->
-                        <div class="col-lg-4">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header bg-white border-0">
-                                    <div class="d-flex align-items-center justify-content-between">
-                                        <h5 class="fw-bold mb-0">
-                                            <i class="bi bi-activity me-2 text-primary"></i>Recent Activity
-                                        </h5>
-                                        <button class="btn btn-sm btn-outline-secondary">
-                                            <i class="bi bi-arrow-clockwise"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="card-body p-0">
-                                    <div class="list-group list-group-flush">
-                                        <div class="list-group-item border-0 py-3">
-                                            <div class="d-flex align-items-start">
-                                                <div class="activity-icon bg-success text-white me-3 flex-shrink-0">
-                                                    <i class="bi bi-plus-circle"></i>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <div class="d-flex align-items-center justify-content-between">
-                                                        <h6 class="mb-1 fw-semibold">New note created</h6>
-                                                        <small class="text-muted">2h</small>
-                                                    </div>
-                                                    <p class="mb-1 text-muted small">Data Structures & Algorithms</p>
-                                                    <div class="d-flex align-items-center">
-                                                        <span class="badge bg-success-subtle text-success me-2">
-                                                            <i class="bi bi-file-text me-1"></i>Note
-                                                        </span>
-                                                        <small class="text-muted">by You</small>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="list-group-item border-0 py-3">
-                                            <div class="d-flex align-items-start">
-                                                <div class="activity-icon bg-primary text-white me-3 flex-shrink-0">
-                                                    <i class="bi bi-share"></i>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <div class="d-flex align-items-center justify-content-between">
-                                                        <h6 class="mb-1 fw-semibold">Note shared with you</h6>
-                                                        <small class="text-muted">5h</small>
-                                                    </div>
-                                                    <p class="mb-1 text-muted small">Machine Learning Basics</p>
-                                                    <div class="d-flex align-items-center">
-                                                        <span class="badge bg-primary-subtle text-primary me-2">
-                                                            <i class="bi bi-share me-1"></i>Shared
-                                                        </span>
-                                                        <small class="text-muted">by Sarah Chen</small>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="list-group-item border-0 py-3">
-                                            <div class="d-flex align-items-start">
-                                                <div class="activity-icon bg-warning text-white me-3 flex-shrink-0">
-                                                    <i class="bi bi-heart"></i>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <div class="d-flex align-items-center justify-content-between">
-                                                        <h6 class="mb-1 fw-semibold">Note liked</h6>
-                                                        <small class="text-muted">1d</small>
-                                                    </div>
-                                                    <p class="mb-1 text-muted small">Someone liked "Database Design"</p>
-                                                    <div class="d-flex align-items-center">
-                                                        <span class="badge bg-warning-subtle text-warning me-2">
-                                                            <i class="bi bi-heart me-1"></i>Like
-                                                        </span>
-                                                        <small class="text-muted">by Mike Johnson</small>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="list-group-item border-0 py-3">
-                                            <div class="d-flex align-items-start">
-                                                <div class="activity-icon bg-info text-white me-3 flex-shrink-0">
-                                                    <i class="bi bi-chat"></i>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <div class="d-flex align-items-center justify-content-between">
-                                                        <h6 class="mb-1 fw-semibold">New comment</h6>
-                                                        <small class="text-muted">2d</small>
-                                                    </div>
-                                                    <p class="mb-1 text-muted small">Comment on "Web Frameworks"</p>
-                                                    <div class="d-flex align-items-center">
-                                                        <span class="badge bg-info-subtle text-info me-2">
-                                                            <i class="bi bi-chat me-1"></i>Comment
-                                                        </span>
-                                                        <small class="text-muted">by Alex Rivera</small>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="card-footer bg-white border-0 text-center">
-                                    <a href="#" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-arrow-right me-1"></i>View All Activity
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
+
                     </div>
                 </div>
             </div>

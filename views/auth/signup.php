@@ -57,8 +57,22 @@ if ($stage === 'form' && isset($_POST['signup_submit'])) {
                     addAlert($alerts, 'danger', 'An account with this email already exists. Please sign in instead.');
                 } else {
                     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-                    $sql_insert = "INSERT INTO users (email, password, full_name, email_verified, is_2fa_enabled, created_at) VALUES (:email, :password, :full_name, 0, 1, NOW())";
+                    // Generate username from full name (remove spaces and make lowercase)
+                    $username = strtolower(str_replace(' ', '', $fullname));
+                    
+                    // Ensure username is unique by adding number if needed
+                    $base_username = $username;
+                    $counter = 1;
+                    while (true) {
+                        $check_username = $db->fetchOne("SELECT id FROM users WHERE username = :username", [':username' => $username]);
+                        if (!$check_username) break;
+                        $username = $base_username . $counter;
+                        $counter++;
+                    }
+                    
+                    $sql_insert = "INSERT INTO users (username, email, password, full_name, is_verified, is_2fa_enabled, created_at) VALUES (:username, :email, :password, :full_name, 1, 1, NOW())";
                     $db->execute($sql_insert, [
+                        ':username' => $username,
                         ':email' => $email,
                         ':password' => $hashedPassword,
                         ':full_name' => $fullname
@@ -68,7 +82,12 @@ if ($stage === 'form' && isset($_POST['signup_submit'])) {
                     addAlert($alerts, 'success', 'Account created! You can now sign in below.');
                 }
             } catch (Exception $e) {
-                addAlert($alerts, 'danger', 'Error during signup: ' . $e->getMessage());
+                error_log("Signup Error: " . $e->getMessage());
+                if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                    addAlert($alerts, 'danger', 'An account with this email already exists. Please sign in instead.');
+                } else {
+                    addAlert($alerts, 'danger', 'Database operation failed. Please try again later.');
+                }
             }
         }
     }

@@ -29,28 +29,10 @@ try {
         [':id' => $user_id]
     );
     
-    // Get 2FA status
-    $tfa_status = $db->fetchOne(
-        'SELECT COUNT(*) as count FROM two_factor_codes WHERE user_id = :id AND used = 0', 
-        [':id' => $user_id]
-    );
-    $has_2fa_enabled = ($tfa_status['count'] ?? 0) > 0;
-    
-    // Get user notes statistics
-    $notes_stats = $db->fetchOne(
-        'SELECT 
-            COUNT(*) as total_notes,
-            SUM(CASE WHEN is_public = 1 THEN 1 ELSE 0 END) as public_notes,
-            SUM(CASE WHEN note_type = "file" THEN 1 ELSE 0 END) as file_notes
-        FROM notes WHERE user_id = :id', 
-        [':id' => $user_id]
-    );
     
 } catch (Exception $e) {
     error_log('Settings: failed to fetch user data: ' . $e->getMessage());
     $current_user = null;
-    $has_2fa_enabled = false;
-    $notes_stats = ['total_notes' => 0, 'public_notes' => 0, 'file_notes' => 0];
 }
 
 // Handle profile update
@@ -304,13 +286,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                             </span>
                         </div>
                         
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span>2FA Status:</span>
-                            <span class="status-badge <?php echo $has_2fa_enabled ? 'status-active' : 'status-inactive'; ?>">
-                                <i class="bi bi-shield<?php echo $has_2fa_enabled ? '-check' : ''; ?> me-1"></i>
-                                <?php echo $has_2fa_enabled ? 'Enabled' : 'Disabled'; ?>
-                            </span>
-                        </div>
+
                         
                         <div class="text-muted mt-3">
                             <small>Member since: <?php echo date('F Y', strtotime($current_user['created_at'] ?? 'now')); ?></small>
@@ -318,26 +294,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                     </div>
                 </div>
                 
-                <!-- Notes Statistics -->
-                <div class="stats-card">
-                    <h6 class="fw-bold mb-3">
-                        <i class="bi bi-graph-up me-2"></i>Your Activity
-                    </h6>
-                    <div class="row text-center">
-                        <div class="col-4">
-                            <div class="fw-bold fs-4"><?php echo $notes_stats['total_notes'] ?? 0; ?></div>
-                            <div class="small">Total Notes</div>
-                        </div>
-                        <div class="col-4">
-                            <div class="fw-bold fs-4"><?php echo $notes_stats['public_notes'] ?? 0; ?></div>
-                            <div class="small">Public</div>
-                        </div>
-                        <div class="col-4">
-                            <div class="fw-bold fs-4"><?php echo $notes_stats['file_notes'] ?? 0; ?></div>
-                            <div class="small">Files</div>
-                        </div>
-                    </div>
-                </div>
+
             </div>
             <div class="form-check form-switch mt-3 ms-3">
               <input class="form-check-input" type="checkbox" id="themeSwitch">
@@ -447,24 +404,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                     </div>
                     <div class="card-body" style="padding: 30px;">
                         <div class="row g-4">
-                            <div class="col-12">
-                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                                    <div>
-                                        <strong><i class="bi bi-shield-check me-2 text-primary"></i>Two-Factor Authentication (2FA)</strong>
-                                        <div class="text-muted small mt-1">Add an extra layer of security to your account</div>
-                                    </div>
-                                    <div class="text-end">
-                                        <span class="status-badge <?php echo $has_2fa_enabled ? 'status-active' : 'status-inactive'; ?>">
-                                            <?php echo $has_2fa_enabled ? 'Enabled' : 'Disabled'; ?>
-                                        </span>
-                                        <div class="mt-2">
-                                            <button class="btn btn-outline-primary btn-sm" onclick="manage2FA()">
-                                                <i class="bi bi-gear me-1"></i>Manage
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+
                             
                             <div class="col-12">
                                 <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
@@ -552,11 +492,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
             confirmPassword.addEventListener('input', validatePassword);
         });
 
-        // 2FA Management
-        function manage2FA() {
-            alert('2FA management will redirect to setup page. This feature can be implemented based on your 2FA system.');
-            // window.location.href = 'two-factor-setup.php';
-        }
+
 
         // Export Data
         function exportData() {
