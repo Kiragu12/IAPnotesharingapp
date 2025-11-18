@@ -1,4 +1,4 @@
-# IAP Note Sharing Application 📚
+# Note Sharing Application 📚
 
 A secure web application for sharing notes with advanced authentication features including 2FA (Two-Factor Authentication), built with PHP and MySQL.
 
