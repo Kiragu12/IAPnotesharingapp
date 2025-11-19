@@ -52,34 +52,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
     if (isset($_POST['admin_login']) && $_POST['admin_login'] == '1') {
         error_log("DEBUG: Admin direct login requested", 3, $debug_log);
         
-        $email = $_POST['email'] ?? '';
+        $email = strtolower(trim($_POST['email'] ?? ''));
         $password = $_POST['password'] ?? '';
         
         if (!empty($email) && !empty($password)) {
-            // Verify credentials
-            $stmt = $db->query("SELECT * FROM users WHERE email = ?", [$email]);
-            $user = $stmt->fetch();
-            
-            if ($user && password_verify($password, $user['password'])) {
-                // Check if user is admin
-                if ($user['is_admin'] == 1) {
-                    // Login directly without 2FA
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['user_name'] = $user['full_name'];
-                    $_SESSION['user_email'] = $user['email'];
-                    $_SESSION['is_admin'] = true;
-                    $_SESSION['login_time'] = time();
-                    
-                    error_log("DEBUG: Admin direct login successful for: $email", 3, $debug_log);
-                    
-                    // Redirect to admin dashboard
-                    header('Location: ../admin/dashboard.php');
-                    exit();
+            try {
+                // Verify credentials
+                $sql = "SELECT * FROM users WHERE email = :email LIMIT 1";
+                $user = $db->fetchOne($sql, [':email' => $email]);
+                
+                if ($user && password_verify($password, $user['password'])) {
+                    // Check if user is admin
+                    if ($user['is_admin'] == 1) {
+                        // Login directly without 2FA
+                        $_SESSION['user_id'] = $user['id'];
+                        $_SESSION['user_name'] = $user['full_name'];
+                        $_SESSION['user_email'] = $user['email'];
+                        $_SESSION['is_admin'] = true;
+                        $_SESSION['login_time'] = time();
+                        
+                        error_log("DEBUG: Admin direct login successful for: $email", 3, $debug_log);
+                        
+                        // Redirect to admin dashboard
+                        header('Location: ../admin/dashboard.php');
+                        exit();
+                    } else {
+                        error_log("DEBUG: User is not admin: $email", 3, $debug_log);
+                        $ObjFncs->setMsg('msg', 'Admin access denied. You are not an administrator.', 'danger');
+                    }
                 } else {
-                    $ObjFncs->setMsg('errors', ['email_error' => 'Admin access denied. You are not an administrator.'], 'danger');
+                    error_log("DEBUG: Invalid admin credentials for: $email", 3, $debug_log);
+                    $ObjFncs->setMsg('msg', 'Invalid email or password.', 'danger');
                 }
-            } else {
-                $ObjFncs->setMsg('errors', ['email_error' => 'Invalid email or password.'], 'danger');
+            } catch (Exception $e) {
+                error_log("DEBUG: Admin login error: " . $e->getMessage(), 3, $debug_log);
+                $ObjFncs->setMsg('msg', 'An error occurred. Please try again.', 'danger');
             }
         }
     } else {

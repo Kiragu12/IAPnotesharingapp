@@ -448,14 +448,12 @@ $error_msg = $ObjFncs->getMsg('errors');
         // Toggle favorite function
         function toggleFavorite(noteId, button) {
             console.log('🚀 Starting favorite toggle for note ID:', noteId);
-            console.log('📍 Current URL:', window.location.href);
-            console.log('🎯 Target URL:', '/notesharingapp/app/Controllers/FavoritesController.php');
             
-            // Test the URL first
-            const controllerUrl = '/notesharingapp/app/Controllers/FavoritesController.php';
-            console.log('🔗 Resolved URL:', new URL(controllerUrl, window.location.href).href);
+            // Correct relative path from views/notes/ to app/Controllers/
+            const controllerUrl = '../../app/Controllers/FavoritesController.php';
+            console.log('🔗 Using URL:', controllerUrl);
             
-            fetch('/notesharingapp/app/Controllers/FavoritesController.php', {
+            fetch(controllerUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',

@@ -413,15 +413,9 @@ try {
                                 <a href="auth/signin.php" class="btn btn-primary-hero">
                                     <i class="bi bi-box-arrow-in-right me-2"></i>Sign In Now
                                 </a>
-                                <a href="auth/dashboard-preview.php" class="btn btn-outline-hero">
-                                    <i class="bi bi-eye me-2"></i>View Dashboard
-                                </a>
                             <?php else: ?>
                                 <a href="auth/signup.php" class="btn btn-primary-hero">
                                     <i class="bi bi-rocket-takeoff me-2"></i>Start Sharing
-                                </a>
-                                <a href="auth/dashboard-preview.php" class="btn btn-outline-hero">
-                                    <i class="bi bi-eye me-2"></i>View Dashboard
                                 </a>
                             <?php endif; ?>
                         </div>

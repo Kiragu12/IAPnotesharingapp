@@ -1,5 +1,9 @@
 {
     "require": {
+        "php": "^8.0",
+        "ext-pdo": "*",
+        "ext-mysqli": "*",
+        "ext-mbstring": "*",
         "phpmailer/phpmailer": "^6.11"
     }
 }

@@ -4,8 +4,14 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-// Load configuration (conf.php is in config directory)
-require_once __DIR__ . '/conf.php';
+// Load configuration - use heroku-config.php on Heroku, conf.php locally
+if (getenv('CLEARDB_DATABASE_URL')) {
+    // Heroku environment
+    $conf = require __DIR__ . '/../heroku-config.php';
+} else {
+    // Local environment
+    require_once __DIR__ . '/conf.php';
+}
 
 // Load language file
 $lang = array();

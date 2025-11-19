@@ -39,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = trim($_POST['title'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $content = trim($_POST['content'] ?? '');
+    $category_id = !empty($_POST['category_id']) ? intval($_POST['category_id']) : null;
     
     if (empty($title)) {
         $error_message = "Please provide a title for your note.";
@@ -68,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             'title' => $title,
                             'content' => $description ?: 'File upload: ' . $file['name'],
                             'note_type' => 'file',
+                            'category_id' => $category_id,
                             'file_path' => 'uploads/documents/' . $unique_name,
                             'file_name' => $file['name'],
                             'file_type' => $file['type'],
@@ -98,6 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'title' => $title,
                     'content' => $content,
                     'note_type' => 'text',
+                    'category_id' => $category_id,
                     'is_public' => 1, // Always make notes public
                     'status' => 'published'
                 ];
@@ -339,6 +342,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </label>
                                 <input type="text" class="form-control form-control-lg" id="title" name="title" 
                                        placeholder="Enter a descriptive title for your note" required>
+                            </div>
+
+                            <!-- Category Selection -->
+                            <div class="mb-3">
+                                <label for="category_id" class="form-label fw-bold">
+                                    <i class="bi bi-tag me-1"></i>Category
+                                </label>
+                                <select class="form-select form-select-lg" id="category_id" name="category_id">
+                                    <option value="">Select a category (optional)</option>
+                                    <?php foreach ($categories as $category): ?>
+                                        <option value="<?php echo $category['id']; ?>">
+                                            <?php echo htmlspecialchars($category['name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <small class="text-muted">Categorize your note to make it easier to find</small>
                             </div>
 
                             <!-- Text Note Content -->

@@ -71,11 +71,13 @@ class auth{
                     
                     error_log("DEBUG: Email is available, proceeding with insert", 3, $debug_log);
                     
-                    // Save user to database
-                    $sql_insert = "INSERT INTO users (username, email, password, full_name, is_verified, is_2fa_enabled, created_at) 
-                                   VALUES (:username, :email, :password, :full_name, 1, 1, NOW())";
+                    // Save user to database (match current schema)
+                    // Note: some deployments do not have `username` or `is_verified` columns,
+                    // so we insert into existing columns `email`, `password`, `full_name`,
+                    // `email_verified` and `is_2fa_enabled`.
+                    $sql_insert = "INSERT INTO users (email, password, full_name, email_verified, is_2fa_enabled, created_at) \
+                                   VALUES (:email, :password, :full_name, 1, 1, NOW())";
                     $stmt = $db->query($sql_insert, [
-                        ':username' => strtolower(str_replace(' ', '', $fullname)), // Generate username from full name
                         ':email' => $email,
                         ':password' => $hashedPassword,
                         ':full_name' => $fullname
@@ -614,12 +616,17 @@ class auth{
 
     // Verify 2FA code during login
     public function verify2FA($conf, $ObjFncs, $verification_code) {
+        $debug_log = __DIR__ . '/../../../debug.log';
+        error_log("DEBUG: verify2FA called with code: $verification_code", 3, $debug_log);
+        
         if (!isset($_SESSION['temp_user_id'])) {
+            error_log("DEBUG: No temp_user_id in session", 3, $debug_log);
             $ObjFncs->setMsg('msg', 'Session expired. Please sign in again.', 'danger');
             return false;
         }
 
         $user_id = $_SESSION['temp_user_id'];
+        error_log("DEBUG: Verifying code for user_id: $user_id", 3, $debug_log);
         
         try {
             $db = new Database($conf);
@@ -639,6 +646,11 @@ class auth{
                 ':code' => $verification_code
             ]);
             
+            error_log("DEBUG: Code record found: " . ($code_record ? 'YES' : 'NO'), 3, $debug_log);
+            if ($code_record) {
+                error_log("DEBUG: Code details - expires_at: " . $code_record['expires_at'] . ", attempts: " . $code_record['attempts_used'], 3, $debug_log);
+            }
+            
             if (!$code_record) {
                 // Increment failed attempts for all valid codes for this user
                 $sql_increment = "UPDATE two_factor_codes 
@@ -649,21 +661,26 @@ class auth{
                                   AND expires_at > NOW()";
                 $db->query($sql_increment, [':user_id' => $user_id]);
                 
+                error_log("DEBUG: Code not found in database", 3, $debug_log);
                 $ObjFncs->setMsg('msg', 'Invalid verification code. Please check your email and try again.', 'danger');
                 return false;
             }
             
             // Check if code has expired
             if (strtotime($code_record['expires_at']) < time()) {
+                error_log("DEBUG: Code expired", 3, $debug_log);
                 $ObjFncs->setMsg('msg', 'Verification code has expired. Please sign in again to get a new code.', 'danger');
                 return false;
             }
             
             // Check if too many attempts
             if ($code_record['attempts_used'] >= ($code_record['max_attempts'] ?? 5)) {
+                error_log("DEBUG: Too many attempts", 3, $debug_log);
                 $ObjFncs->setMsg('msg', 'Too many failed attempts. Please sign in again to get a new code.', 'danger');
                 return false;
             }
+            
+            error_log("DEBUG: Code is valid, marking as used", 3, $debug_log);
             
             // Code is valid - mark it as used
             $sql_mark_used = "UPDATE two_factor_codes 
@@ -676,9 +693,12 @@ class auth{
             $user = $db->fetchOne($sql_user, [':user_id' => $user_id]);
             
             if (!$user) {
+                error_log("DEBUG: User not found with id: $user_id", 3, $debug_log);
                 $ObjFncs->setMsg('msg', 'User not found. Please sign in again.', 'danger');
                 return false;
             }
+            
+            error_log("DEBUG: Setting session variables for user: " . $user['email'], 3, $debug_log);
             
             // Complete the login process
             if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -725,18 +745,12 @@ class auth{
             unset($_SESSION['temp_user_name']);
             unset($_SESSION['temp_remember_me']);
             
-            // Clean up old/expired 2FA codes for this user
-            $sql_cleanup = "UPDATE two_factor_codes 
-                            SET is_used = 1 
-                            WHERE user_id = :user_id 
-                            AND code_type = 'login' 
-                            AND is_used = 0";
-            $db->query($sql_cleanup, [':user_id' => $user['id']]);
-            
+            error_log("DEBUG: 2FA verification successful, returning true", 3, $debug_log);
             return true;
             
         } catch (Exception $e) {
-            error_log('2FA verification error: ' . $e->getMessage());
+            error_log('DEBUG: 2FA verification error: ' . $e->getMessage(), 3, $debug_log);
+            error_log('DEBUG: 2FA error trace: ' . $e->getTraceAsString(), 3, $debug_log);
             $ObjFncs->setMsg('msg', 'An error occurred during verification. Please try again.', 'danger');
             return false;
         }

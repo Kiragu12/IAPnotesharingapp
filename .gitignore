@@ -13,9 +13,14 @@ Thumbs.db
 # Logs
 *.log
 logs/
+debug.log
 
 # Env files
 .env
+
+# Uploaded files
+uploads/documents/*
+!uploads/documents/.gitkeep
 
 # Exclude nested cloned repo
 tol/

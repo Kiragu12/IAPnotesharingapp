@@ -296,13 +296,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                 
 
             </div>
-            <div class="form-check form-switch mt-3 ms-3">
-              <input class="form-check-input" type="checkbox" id="themeSwitch">
-                 <label class="form-check-label" for="themeSwitch">
-                    <i class="bi bi-brightness-high me-2" id="themeIcon"></i>
-                    <span id="themeLabel">Light Mode</span>
-                 </label>
-            </div>
             
             <!-- Settings Forms -->
             <div class="col-lg-8">
@@ -529,23 +522,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                     card.style.transform = 'translateY(0)';
                 }, index * 100);
             });
-        });
-        // Theme Switcher
-        const themeSwitch = document.getElementById('themeSwitch');
-        const themeIcon = document.getElementById('themeIcon');
-        const themeLabel = document.getElementById('themeLabel');
-        themeSwitch.addEventListener('change', function() {
-            if (this.checked) {
-                document.body.classList.add('dark-mode');
-                themeIcon.classList.remove('bi-brightness-high');
-                themeIcon.classList.add('bi-moon');
-                themeLabel.textContent = 'Dark Mode';
-            } else {
-                document.body.classList.remove('dark-mode');
-                themeIcon.classList.remove('bi-moon');
-                themeIcon.classList.add('bi-brightness-high');
-                themeLabel.textContent = 'Light Mode';
-            }
         });
     </script>
 </body>
