@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             require_once '../../app/Controllers/NotesController.php';
-            $notesController = new NotesController();
+            $notesController = new NotesController($db);
             
             if ($note_type === 'file' && isset($_FILES['uploaded_file']) && $_FILES['uploaded_file']['error'] === UPLOAD_ERR_OK) {
                 // File upload logic
@@ -248,6 +248,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <li class="nav-item">
                         <a class="nav-link" href="../shared-notes.php">
                             <i class="bi bi-share me-1"></i>Shared Notes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../favorites.php">
+                            <i class="bi bi-heart me-1"></i>Favorites
                         </a>
                     </li>
                     <li class="nav-item">

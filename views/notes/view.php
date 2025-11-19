@@ -3,6 +3,11 @@
  * Individual Note Viewing Page
  */
 
+// Add cache control headers to ensure fresh data
+header('Cache-Control: no-cache, no-store, must-revalidate');
+header('Pragma: no-cache');
+header('Expires: 0');
+
 session_start();
 
 // Check if user is logged in
@@ -14,9 +19,11 @@ if (!isset($_SESSION['user_id'])) {
 require_once '../../config/conf.php';
 require_once '../../app/Services/Global/Database.php';
 require_once '../../app/Services/Global/fncs.php';
+require_once '../../app/Controllers/FavoritesController.php';
 
 $ObjFncs = new fncs();
 $db = new Database($conf);
+$favoritesController = new FavoritesController($db);
 
 // Get note ID from URL
 $note_id = $_GET['id'] ?? null;
@@ -42,6 +49,9 @@ try {
         header('Location: ../shared-notes.php?error=note_not_found');
         exit();
     }
+    
+    // Check if note is favorited by current user
+    $is_favorited = $favoritesController->isFavorited($user_id, $note_id);
     
 } catch (Exception $e) {
     error_log("Error fetching note: " . $e->getMessage());
@@ -220,6 +230,11 @@ $error_msg = $ObjFncs->getMsg('errors');
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="../favorites.php">
+                            <i class="bi bi-heart me-1"></i>Favorites
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="create.php">
                             <i class="bi bi-plus-circle me-1"></i>Create Note
                         </a>
@@ -246,6 +261,14 @@ $error_msg = $ObjFncs->getMsg('errors');
     <div class="container my-5">
         <div class="row justify-content-center">
             <div class="col-lg-10">
+                
+                <!-- Success Messages -->
+                <?php if (isset($_GET['message']) && $_GET['message'] === 'note_updated'): ?>
+                    <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                        <i class="bi bi-check-circle me-2"></i>Note updated successfully! Your changes have been saved.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <?php endif; ?>
                 
                 <!-- Back Button -->
                 <div class="mb-4">
@@ -402,8 +425,16 @@ $error_msg = $ObjFncs->getMsg('errors');
                         <i class="bi bi-arrow-left me-2"></i>Back to Gallery
                     </a>
                     
+                    <!-- Favorite Button -->
+                    <button class="btn <?php echo $is_favorited ? 'btn-danger' : 'btn-outline-danger'; ?> me-3" 
+                            onclick="toggleFavorite(<?php echo $note['id']; ?>, this)" 
+                            title="<?php echo $is_favorited ? 'Remove from favorites' : 'Add to favorites'; ?>">
+                        <i class="bi bi-heart<?php echo $is_favorited ? '-fill' : ''; ?> me-2"></i>
+                        <?php echo $is_favorited ? 'Favorited' : 'Add to Favorites'; ?>
+                    </button>
+                    
                     <?php if ($note['user_id'] == $user_id): ?>
-                        <a href="edit.php?id=<?php echo $note['id']; ?>" class="btn btn-outline-primary">
+                        <a href="edit.php?id=<?php echo $note['id']; ?>&from=view" class="btn btn-outline-primary">
                             <i class="bi bi-pencil me-2"></i>Edit Note
                         </a>
                     <?php endif; ?>
@@ -413,5 +444,105 @@ $error_msg = $ObjFncs->getMsg('errors');
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle favorite function
+        function toggleFavorite(noteId, button) {
+            console.log('🚀 Starting favorite toggle for note ID:', noteId);
+            console.log('📍 Current URL:', window.location.href);
+            console.log('🎯 Target URL:', '/notesharingapp/app/Controllers/FavoritesController.php');
+            
+            // Test the URL first
+            const controllerUrl = '/notesharingapp/app/Controllers/FavoritesController.php';
+            console.log('🔗 Resolved URL:', new URL(controllerUrl, window.location.href).href);
+            
+            fetch('/notesharingapp/app/Controllers/FavoritesController.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `action=toggle_favorite&note_id=${noteId}`
+            })
+            .then(response => {
+                console.log('✅ Response received - Status:', response.status);
+                console.log('📋 Response headers:', response.headers);
+                console.log('🔍 Response OK:', response.ok);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                return response.text().then(text => {
+                    console.log('📄 Raw response text:', text);
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('❌ JSON Parse Error:', e);
+                        console.error('📄 Response was:', text);
+                        throw new Error('Invalid JSON response: ' + text.substring(0, 100));
+                    }
+                });
+            })
+            .then(data => {
+                console.log('📦 Parsed response data:', data);
+                if (data.success) {
+                    // Update button appearance
+                    const icon = button.querySelector('i');
+                    if (button.classList.contains('btn-danger')) {
+                        // Remove from favorites
+                        button.classList.remove('btn-danger');
+                        button.classList.add('btn-outline-danger');
+                        icon.classList.remove('bi-heart-fill');
+                        icon.classList.add('bi-heart');
+                        button.innerHTML = '<i class="bi bi-heart me-2"></i>Add to Favorites';
+                        button.title = 'Add to favorites';
+                    } else {
+                        // Add to favorites
+                        button.classList.remove('btn-outline-danger');
+                        button.classList.add('btn-danger');
+                        icon.classList.remove('bi-heart');
+                        icon.classList.add('bi-heart-fill');
+                        button.innerHTML = '<i class="bi bi-heart-fill me-2"></i>Favorited';
+                        button.title = 'Remove from favorites';
+                    }
+                    
+                    // Show success message
+                    showToast(data.message, 'success');
+                } else {
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('💥 Error details:', error);
+                console.error('💥 Error message:', error.message);
+                console.error('💥 Error stack:', error.stack);
+                showToast('Network error: ' + error.message, 'error');
+            });
+        }
+        
+        // Toast notification function
+        function showToast(message, type) {
+            // Create toast element
+            const toastHtml = `
+                <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', toastHtml);
+            const toastElement = document.querySelector('.toast:last-child');
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+            
+            // Remove toast element after it's hidden
+            toastElement.addEventListener('hidden.bs.toast', () => {
+                toastElement.remove();
+            });
+        }
+    </script>
 </body>
 </html>

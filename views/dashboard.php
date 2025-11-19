@@ -368,6 +368,11 @@ if (isset($_GET['error'])) {
                                 <span class="badge bg-success rounded-pill"><?php echo $nav_counters['shared_notes_count']; ?></span>
                             </button>
                         </li>
+                        <li class="nav-item">
+                            <button class="nav-link w-100 text-start border-0" style="background: none;" onclick="navigateTo('favorites')">
+                                <i class="bi bi-heart me-2"></i>Favorites
+                            </button>
+                        </li>
                          <li class="nav-item">
                             <button class="nav-link w-100 text-start border-0" style="background: none;" onclick="navigateTo('settings')">
                                 <i class="bi bi-gear me-2"></i>Settings
@@ -572,7 +577,7 @@ if (isset($_GET['error'])) {
                                                             </button>
                                                             <ul class="dropdown-menu dropdown-menu-end">
                                                                 <li><a class="dropdown-item" href="notes/view.php?id=<?php echo $note['id']; ?>"><i class="bi bi-eye me-2"></i>View</a></li>
-                                                                <li><a class="dropdown-item" href="notes/edit.php?id=<?php echo $note['id']; ?>"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                                                                <li><a class="dropdown-item" href="notes/edit.php?id=<?php echo $note['id']; ?>&from=dashboard"><i class="bi bi-pencil me-2"></i>Edit</a></li>
                                                                 <?php if ($note['note_type'] === 'file' && $note['file_path']): ?>
                                                                     <li><a class="dropdown-item" href="notes/download.php?id=<?php echo $note['id']; ?>" target="_blank"><i class="bi bi-download me-2"></i>Download</a></li>
                                                                 <?php endif; ?>
@@ -638,6 +643,10 @@ if (isset($_GET['error'])) {
                 case 'shared-notes':
                     // Navigate to shared notes
                     window.location.href = 'shared-notes.php';
+                    break;
+                case 'favorites':
+                    // Navigate to favorites
+                    window.location.href = 'favorites.php';
                     break;
                 case 'settings':
                     // Navigate to settings

@@ -9,6 +9,18 @@ class Database {
     private $conf;
     
     public function __construct($conf) {
+        if ($conf === null || !is_array($conf)) {
+            throw new Exception("Database configuration is required and must be an array.");
+        }
+        
+        // Validate required configuration keys
+        $required_keys = ['db_host', 'db_port', 'db_name', 'db_user', 'db_pass'];
+        foreach ($required_keys as $key) {
+            if (!isset($conf[$key])) {
+                throw new Exception("Database configuration missing required key: $key");
+            }
+        }
+        
         $this->conf = $conf;
         $this->connect();
     }

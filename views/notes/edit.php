@@ -3,6 +3,11 @@
  * Edit Note Page
  */
 
+// Add cache control headers to ensure fresh data
+header('Cache-Control: no-cache, no-store, must-revalidate');
+header('Pragma: no-cache');
+header('Expires: 0');
+
 session_start();
 
 // Check if user is logged in
@@ -21,13 +26,13 @@ $note_id = (int)$_GET['id'];
 $user_id = $_SESSION['user_id'];
 
 require_once '../../config/conf.php';
-require_once '../../app/Controllers/NotesController.php';
-require_once '../../app/Services/Global/fncs.php';
 require_once '../../app/Services/Global/Database.php';
+require_once '../../app/Services/Global/fncs.php';
+require_once '../../app/Controllers/NotesController.php';
 
-$notesController = new NotesController();
-$ObjFncs = new fncs();
 $db = new Database($conf);
+$ObjFncs = new fncs();
+$notesController = new NotesController($db);
 
 // Get the note and verify ownership
 $note = $notesController->getNote($note_id, $user_id);
@@ -59,8 +64,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_note'])) {
     
     $result = $notesController->updateNote($note_id, $data, $user_id);
     if ($result) {
-        // Redirect to dashboard with success message and timestamp to prevent caching
-        $redirect_url = '../dashboard.php?message=note_updated&t=' . time() . '#my-notes-section';
+        // Default redirect to shared-notes page
+        $redirect_url = '../shared-notes.php?message=note_updated&t=' . time();
+        
+        // Check if there's a specific referring page to go back to
+        if (isset($_POST['redirect_back']) && !empty($_POST['redirect_back'])) {
+            $redirect_back = $_POST['redirect_back'];
+            
+            // If coming from shared-notes or view page, use that; otherwise use shared-notes
+            if (strpos($redirect_back, 'shared-notes.php') !== false || 
+                strpos($redirect_back, 'view.php') !== false ||
+                strpos($redirect_back, 'dashboard.php') !== false) {
+                
+                // Add success message and timestamp to prevent caching
+                $separator = strpos($redirect_back, '?') !== false ? '&' : '?';
+                $redirect_url = $redirect_back . $separator . 'message=note_updated&t=' . time();
+            }
+        }
+        
+        // Add cache-busting headers to ensure changes reflect everywhere
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
         header('Location: ' . $redirect_url);
         exit();
     } else {
@@ -141,6 +167,9 @@ $error_messages = $ObjFncs->getMsg('errors');
                 <a class="nav-link" href="../dashboard.php">
                     <i class="bi bi-journals me-1"></i>My Notes
                 </a>
+                <a class="nav-link" href="../favorites.php">
+                    <i class="bi bi-heart me-1"></i>Favorites
+                </a>
                 <a class="nav-link" href="view.php?id=<?php echo $note['id']; ?>">
                     <i class="bi bi-eye me-1"></i>View Note
                 </a>
@@ -203,6 +232,29 @@ $error_messages = $ObjFncs->getMsg('errors');
                 <div class="card">
                     <div class="card-body p-4">
                         <form method="POST" id="editNoteForm">
+                            <!-- Hidden field to store referring page for redirect -->
+                            <?php 
+                            // Determine where to redirect after update
+                            $referer = $_SERVER['HTTP_REFERER'] ?? '';
+                            
+                            // If no referer, coming from edit page, or coming from outside the app, default to shared-notes
+                            if (empty($referer) || 
+                                strpos($referer, 'edit.php') !== false || 
+                                strpos($referer, 'localhost/notesharingapp') === false) {
+                                $referer = '../shared-notes.php';
+                            }
+                            
+                            // Also handle GET parameter for explicit redirect
+                            if (isset($_GET['from']) && $_GET['from'] === 'shared') {
+                                $referer = '../shared-notes.php';
+                            } elseif (isset($_GET['from']) && $_GET['from'] === 'view') {
+                                $referer = 'view.php?id=' . $note_id;
+                            } elseif (isset($_GET['from']) && $_GET['from'] === 'dashboard') {
+                                $referer = '../dashboard.php';
+                            }
+                            ?>
+                            <input type="hidden" name="redirect_back" value="<?php echo htmlspecialchars($referer); ?>">>
+                            
                             <!-- Title -->
                             <div class="form-floating mb-3">
                                 <input type="text" class="form-control" id="title" name="title" placeholder="Enter note title" required maxlength="255" value="<?php echo htmlspecialchars($note['title']); ?>">
@@ -362,8 +414,13 @@ $error_messages = $ObjFncs->getMsg('errors');
             
             // Show loading state
             const submitBtn = document.getElementById('submitBtn');
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
-            submitBtn.disabled = true;
+            if (submitBtn) {
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
+                submitBtn.disabled = true;
+            }
+            
+            // Let the form submit naturally
+            return true;
         });
 
         // Auto-save functionality (optional)

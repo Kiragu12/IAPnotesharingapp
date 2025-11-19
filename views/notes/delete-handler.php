@@ -15,9 +15,11 @@ if (!isset($_SESSION['user_id'])) {
 // Load required files
 try {
     require_once '../../config/conf.php';
+    require_once '../../app/Services/Global/Database.php';
     require_once '../../app/Controllers/NotesController.php';
     
-    $notesController = new NotesController();
+    $db = new Database($conf);
+    $notesController = new NotesController($db);
     $user_id = $_SESSION['user_id'];
 } catch (Exception $e) {
     header('Location: ../dashboard.php?error=system_error&message=' . urlencode($e->getMessage()));

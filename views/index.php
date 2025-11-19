@@ -45,6 +45,10 @@ try {
             box-sizing: border-box;
         }
         
+        html {
+            scroll-behavior: smooth;
+        }
+        
         body {
             font-family: 'Poppins', sans-serif;
             line-height: 1.6;
@@ -79,10 +83,15 @@ try {
             position: relative;
         }
         
-        .nav-link:hover {
+        .nav-link:hover,
+        .nav-link.active {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white !important;
             transform: translateY(-2px);
+        }
+        
+        .nav-link.active {
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
         
         .btn-nav {
@@ -428,7 +437,7 @@ try {
     </section>
 
     <!-- Features Section -->
-    <section class="features-section">
+    <section id="features" class="features-section">
         <div class="container">
             <!-- Header Row -->
             <div class="row text-center mb-5">
@@ -515,6 +524,87 @@ try {
         </div>
     </section>
 
+    <!-- About Section -->
+    <section id="about" class="py-5 bg-light">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h2 class="display-6 fw-bold mb-4">About NotesShare Academy</h2>
+                    <p class="lead mb-4">
+                        NotesShare Academy is a collaborative learning platform designed specifically for students who believe in the power of shared knowledge.
+                    </p>
+                    <p class="mb-4">
+                        Our mission is to create a secure, user-friendly environment where students can easily create, organize, and share their academic notes. Whether you're studying alone or working with a group, our platform provides the tools you need to succeed.
+                    </p>
+                    <div class="row g-4">
+                        <div class="col-6">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary rounded-circle p-2 me-3">
+                                    <i class="bi bi-shield-check text-white"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Secure Platform</h6>
+                                    <small class="text-muted">2FA protected</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-success rounded-circle p-2 me-3">
+                                    <i class="bi bi-people text-white"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Community Driven</h6>
+                                    <small class="text-muted">Student focused</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body text-center p-4">
+                                    <i class="bi bi-journal-text text-primary" style="font-size: 2rem;"></i>
+                                    <h5 class="mt-3 mb-1">Smart Notes</h5>
+                                    <small class="text-muted">Organize with ease</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body text-center p-4">
+                                    <i class="bi bi-share text-success" style="font-size: 2rem;"></i>
+                                    <h5 class="mt-3 mb-1">Easy Sharing</h5>
+                                    <small class="text-muted">One click sharing</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body text-center p-4">
+                                    <i class="bi bi-heart text-danger" style="font-size: 2rem;"></i>
+                                    <h5 class="mt-3 mb-1">Favorites</h5>
+                                    <small class="text-muted">Save what matters</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body text-center p-4">
+                                    <i class="bi bi-graph-up text-info" style="font-size: 2rem;"></i>
+                                    <h5 class="mt-3 mb-1">Analytics</h5>
+                                    <small class="text-muted">Track progress</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Stats Section -->
     <section class="stats-section">
         <div class="container">
@@ -572,7 +662,7 @@ try {
     </section>
 
     <!-- Testimonials Section -->
-    <section class="py-5 bg-light">
+    <section class="py-5">
         <div class="container">
             <div class="row text-center mb-5">
                 <div class="col-lg-8 mx-auto">
@@ -720,6 +810,26 @@ try {
     <script>
         // Add smooth scrolling and animations
         document.addEventListener('DOMContentLoaded', function() {
+            // Smooth scrolling for navigation links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                        
+                        // Update active navigation state
+                        document.querySelectorAll('.nav-link').forEach(link => {
+                            link.classList.remove('active');
+                        });
+                        this.classList.add('active');
+                    }
+                });
+            });
+            
             // Animate elements on scroll
             const observerOptions = {
                 threshold: 0.1,
@@ -737,6 +847,28 @@ try {
             // Observe all feature cards
             document.querySelectorAll('.feature-card, .stat-item').forEach(card => {
                 observer.observe(card);
+            });
+
+            // Highlight active section on scroll
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.nav-link[href^="#"]');
+            
+            window.addEventListener('scroll', function() {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop - 100;
+                    const sectionHeight = section.offsetHeight;
+                    if (window.scrollY >= sectionTop && window.scrollY <= sectionTop + sectionHeight) {
+                        current = section.getAttribute('id');
+                    }
+                });
+                
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === '#' + current) {
+                        link.classList.add('active');
+                    }
+                });
             });
         });
     </script>
