@@ -9,7 +9,7 @@ class AdminController {
     private $ObjFncs;
     
     public function __construct() {
-        // Ensure session is started
+        // Ensure session has started
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
