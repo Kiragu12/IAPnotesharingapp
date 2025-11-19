@@ -7,7 +7,7 @@ A secure web application for sharing notes with advanced authentication features
 - **User Registration & Authentication**: Secure signup and signin process.
 - **Two-Factor Authentication (2FA)**: Email-based OTP verification for enhanced security.
 - **Enhanced Notes Management**: Create, edit, view, and organize both text notes and file uploads.
-- **File Upload Support**: Upload documents (PDF, DOC, DOCX), images (JPG, PNG, GIF), and spreadsheets (XLS, XLSX)
+- **File Upload Support**: Upload documents (PDF, DOC, DOCX), images (JPG, PNG, GIF), and spreadsheets (XLS, XLSX).
 - **Dual Note Types**: Text notes with rich content or file uploads with descriptions
 - **Categories & Tags**: Organize notes with categories and tags for easy discovery
 - **Public/Private Notes**: Share notes publicly or keep them private
