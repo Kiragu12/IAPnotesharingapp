@@ -3,7 +3,7 @@
 session_start();
 
 // Load core config and services needed for signin processing
-require_once '../../config/conf.php';
+require_once '../../conf.php';
 require_once '../../config/Lang/en.php';
 require_once '../../app/Services/Global/Database.php';
 require_once '../../app/Services/Global/fncs.php';
@@ -37,7 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
     if (!empty($_POST)) {
         error_log("DEBUG: POST data in signin.php: " . print_r($_POST, true), 3, $debug_log);
     }
-
     // If running in stub/no-db mode, accept the credentials and create a demo session
     if ($db->isStubMode()) {
         $u = $stubProvider->getSampleUser();
@@ -49,11 +48,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
         exit();
     }
 
-    require_once '../../config/ClassAutoLoad.php';
-    // This will redirect to two_factor_auth.php if successful
-    $ObjAuth->login($conf, $ObjFncs, $ObjSendMail);
-    error_log("DEBUG: Returned from login function (should not see this if redirect works)", 3, $debug_log);
-    // If we're still here, login failed - errors are in session
+    // Check if admin direct login is requested
+    if (isset($_POST['admin_login']) && $_POST['admin_login'] == '1') {
+        error_log("DEBUG: Admin direct login requested", 3, $debug_log);
+        
+        $email = $_POST['email'] ?? '';
+        $password = $_POST['password'] ?? '';
+        
+        if (!empty($email) && !empty($password)) {
+            // Verify credentials
+            $stmt = $db->query("SELECT * FROM users WHERE email = ?", [$email]);
+            $user = $stmt->fetch();
+            
+            if ($user && password_verify($password, $user['password'])) {
+                // Check if user is admin
+                if ($user['is_admin'] == 1) {
+                    // Login directly without 2FA
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['user_name'] = $user['full_name'];
+                    $_SESSION['user_email'] = $user['email'];
+                    $_SESSION['is_admin'] = true;
+                    $_SESSION['login_time'] = time();
+                    
+                    error_log("DEBUG: Admin direct login successful for: $email", 3, $debug_log);
+                    
+                    // Redirect to admin dashboard
+                    header('Location: ../admin/dashboard.php');
+                    exit();
+                } else {
+                    $ObjFncs->setMsg('errors', ['email_error' => 'Admin access denied. You are not an administrator.'], 'danger');
+                }
+            } else {
+                $ObjFncs->setMsg('errors', ['email_error' => 'Invalid email or password.'], 'danger');
+            }
+        }
+    } else {
+        // Regular login with 2FA
+        require_once '../../config/ClassAutoLoad.php';
+        // This will redirect to two_factor_auth.php if successful
+        $ObjAuth->login($conf, $ObjFncs, $ObjSendMail);
+        error_log("DEBUG: Returned from login function (should not see this if redirect works)", 3, $debug_log);
+        // If we're still here, login failed - errors are in session
+    }
 } else if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     error_log("DEBUG: POST request received but signin parameter missing: " . print_r(array_keys($_POST), true), 3, $debug_log);
 }
@@ -406,6 +442,25 @@ $msg = $ObjFncs->getMsg('msg') ?: '';
         .signin-card {
             animation: slideInUp 0.8s ease forwards;
         }
+        
+        /* Login Mode Toggle Styles */
+        .login-type-selector .btn-check:checked + .btn {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            color: white;
+            box-shadow: 0 4px 10px rgba(118, 75, 162, 0.3);
+        }
+        
+        .login-type-selector .btn {
+            color: #666;
+            transition: all 0.3s ease;
+            border: none;
+            padding: 0.6rem 1rem;
+        }
+        
+        .login-type-selector .btn:hover {
+            color: #764ba2;
+            background: rgba(118, 75, 162, 0.05);
+        }
     </style>
 </head>
 <body>
@@ -496,6 +551,26 @@ $msg = $ObjFncs->getMsg('msg') ?: '';
                             <form action="" method="post" autocomplete="off" class="needs-validation" novalidate>
                                 <!-- Hidden input to ensure signin parameter is sent -->
                                 <input type="hidden" name="signin" value="1">
+                                <!-- Hidden Admin Flag (synced with toggle) -->
+                                <input type="hidden" name="admin_login" id="admin_login_input" value="0">
+                                
+                                <!-- Login Type Toggle -->
+                                <div class="login-type-selector mb-4">
+                                    <div class="row g-0 p-1 bg-light rounded-pill border">
+                                        <div class="col-6">
+                                            <input type="radio" class="btn-check" name="login_mode" id="mode_user" value="user" checked onchange="toggleLoginMode()">
+                                            <label class="btn btn-sm w-100 rounded-pill fw-bold" for="mode_user" id="label_user">
+                                                <i class="bi bi-person me-2"></i>User Login
+                                            </label>
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="radio" class="btn-check" name="login_mode" id="mode_admin" value="admin" onchange="toggleLoginMode()">
+                                            <label class="btn btn-sm w-100 rounded-pill fw-bold" for="mode_admin" id="label_admin">
+                                                <i class="bi bi-shield-lock me-2"></i>Admin Login
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
                                 
                                 <!-- Email Field with Bootstrap Input Group -->
                                 <div class="mb-3">
@@ -585,21 +660,18 @@ $msg = $ObjFncs->getMsg('msg') ?: '';
                                     </button>
                                 </div>
                                 
-                                <!-- Demo Credentials Card -->
-                                <div class="card border-0 bg-light mb-3">
-                                    <div class="card-body py-2 px-3">
-                                        <div class="row align-items-center">
-                                            <div class="col">
-                                                <small class="text-muted">
-                                                    <i class="bi bi-info-circle me-1"></i>Try demo credentials
-                                                </small>
-                                            </div>
-                                            <div class="col-auto">
-                                                <button type="button" class="btn btn-outline-primary btn-sm" id="demoBtn">
-                                                    <i class="bi bi-person-gear me-1"></i>Use Demo
-                                                </button>
-                                            </div>
-                                        </div>
+                                <!-- Admin Info / Demo Button (Hidden by default, shown via JS for Admin) -->
+                                <div id="adminInfoArea" class="d-none">
+                                    <div class="alert alert-warning border-0 bg-warning bg-opacity-10 py-2 px-3 mb-3">
+                                        <small class="d-flex align-items-center text-warning-emphasis">
+                                            <i class="bi bi-info-circle-fill me-2"></i>
+                                            <span>Admin login bypasses 2FA verification.</span>
+                                        </small>
+                                    </div>
+                                    <div class="text-center mb-3">
+                                        <button type="button" class="btn btn-link text-decoration-none text-muted btn-sm" id="demoBtn">
+                                            <i class="bi bi-magic me-1"></i>Auto-fill Admin Credentials
+                                        </button>
                                     </div>
                                 </div>
                             </form>
@@ -686,27 +758,52 @@ $msg = $ObjFncs->getMsg('msg') ?: '';
             }
         });
         
+        // Login Mode Toggle Logic
+        function toggleLoginMode() {
+            const isUser = document.getElementById('mode_user').checked;
+            const adminInput = document.getElementById('admin_login_input');
+            const adminInfo = document.getElementById('adminInfoArea');
+            const submitText = document.getElementById('submitText');
+            
+            if (isUser) {
+                // User Mode
+                adminInput.value = '0';
+                adminInfo.classList.add('d-none');
+                submitText.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Sign In to Dashboard';
+            } else {
+                // Admin Mode
+                adminInput.value = '1';
+                adminInfo.classList.remove('d-none');
+                submitText.innerHTML = '<i class="bi bi-shield-lock me-2"></i>Sign In as Admin';
+            }
+        }
+
         // Demo credentials functionality
         document.getElementById('demoBtn').addEventListener('click', function() {
             const emailInput = document.getElementById('email');
             const passwordInput = document.getElementById('password');
             
-            emailInput.value = 'demo@noteshareacademy.com';
-            passwordInput.value = 'demo123';
+            // Ensure we are in admin mode
+            document.getElementById('mode_admin').checked = true;
+            toggleLoginMode();
+            
+            // Use admin credentials
+            emailInput.value = 'admin@noteshareacademy.com';
+            passwordInput.value = 'admin123';
             
             // Trigger validation
             emailInput.dispatchEvent(new Event('input'));
             passwordInput.dispatchEvent(new Event('input'));
             
             // Add animation feedback
-            this.innerHTML = '<i class="bi bi-check-circle me-1"></i>Applied!';
-            this.classList.remove('btn-outline-primary');
-            this.classList.add('btn-success');
+            this.innerHTML = '<i class="bi bi-check-circle me-1"></i>Credentials Applied!';
+            this.classList.remove('text-muted');
+            this.classList.add('text-success');
             
             setTimeout(() => {
-                this.innerHTML = '<i class="bi bi-person-gear me-1"></i>Use Demo';
-                this.classList.remove('btn-success');
-                this.classList.add('btn-outline-primary');
+                this.innerHTML = '<i class="bi bi-magic me-1"></i>Auto-fill Admin Credentials';
+                this.classList.remove('text-success');
+                this.classList.add('text-muted');
             }, 2000);
         });
         

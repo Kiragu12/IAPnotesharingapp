@@ -85,6 +85,27 @@ class NotesController {
             $content = trim($data['content']);
             $summary = !empty($data['summary']) ? trim($data['summary']) : $this->generateSummary($content);
             $category_id = !empty($data['category_id']) ? (int)$data['category_id'] : null;
+            $category_name = !empty($data['category_name']) ? trim($data['category_name']) : null;
+
+            // If a category name was provided but no category_id, attempt to find or create it
+            if (empty($category_id) && !empty($category_name)) {
+                try {
+                    // Try to find existing category by exact name
+                    $existing = $this->db->fetchOne("SELECT id FROM categories WHERE name = :name", [':name' => $category_name]);
+                    if ($existing && isset($existing['id'])) {
+                        $category_id = (int)$existing['id'];
+                    } else {
+                        // Insert new category
+                        $insSql = "INSERT INTO categories (name, created_at) VALUES (:name, NOW())";
+                        $this->db->query($insSql, [':name' => $category_name]);
+                        $category_id = $this->db->getPDO()->lastInsertId();
+                    }
+                } catch (Exception $e) {
+                    error_log('Category creation/find failed: ' . $e->getMessage());
+                    // leave category_id null on error
+                    $category_id = null;
+                }
+            }
             $tags = !empty($data['tags']) ? trim($data['tags']) : '';
             $is_public = isset($data['is_public']) && $data['is_public'] ? 1 : 0; // Convert to integer for MySQL
             $status = !empty($data['status']) ? $data['status'] : 'draft';
