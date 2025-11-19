@@ -4,8 +4,11 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-// Load configuration - use heroku-config.php on Heroku, conf.php locally
-if (getenv('CLEARDB_DATABASE_URL')) {
+// Load configuration - detect environment and use appropriate config
+if (getenv('RAILWAY_ENVIRONMENT') || getenv('MYSQLHOST')) {
+    // Railway environment
+    $conf = require __DIR__ . '/../railway-config.php';
+} elseif (getenv('CLEARDB_DATABASE_URL')) {
     // Heroku environment
     $conf = require __DIR__ . '/../heroku-config.php';
 } else {
