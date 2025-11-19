@@ -7,6 +7,7 @@
 class Database {
     private $pdo;
     private $conf;
+    private $stubMode = false;
     
     public function __construct($conf) {
         $this->conf = $conf;
@@ -18,10 +19,19 @@ class Database {
      * Supports both MySQL and PostgreSQL (Supabase)
      */
     private function connect() {
+        // If configuration explicitly disables DB or required credentials are missing,
+        // enter stub mode so the application can run without a database.
+        $driver = isset($this->conf['db_driver']) ? $this->conf['db_driver'] : 'mysql';
+
+        if ($driver === 'none' || empty($this->conf['db_host']) || empty($this->conf['db_user']) || empty($this->conf['db_name'])) {
+            // Stub mode: no PDO connection, methods will return safe defaults
+            $this->pdo = null;
+            $this->stubMode = true;
+            error_log("Database running in stub mode: no connection established.");
+            return;
+        }
+
         try {
-            // Determine database driver (default to mysql for backwards compatibility)
-            $driver = isset($this->conf['db_driver']) ? $this->conf['db_driver'] : 'mysql';
-            
             // Create DSN (Data Source Name) based on driver
             if ($driver === 'pgsql') {
                 // PostgreSQL DSN for Supabase
@@ -36,7 +46,7 @@ class Database {
                        ";dbname=" . $this->conf['db_name'] . 
                        ";charset=utf8mb4";
             }
-            
+
             // PDO options for better security and error handling
             $options = [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
@@ -45,15 +55,15 @@ class Database {
                 PDO::ATTR_PERSISTENT         => false,
                 PDO::ATTR_TIMEOUT            => 10, // 10 second timeout
             ];
-            
+
             // For PostgreSQL, add connection timeout to DSN
             if ($driver === 'pgsql') {
                 $dsn .= ";connect_timeout=10";
             }
-            
+
             // Create PDO instance
             $this->pdo = new PDO($dsn, $this->conf['db_user'], $this->conf['db_pass'], $options);
-            
+
         } catch (PDOException $e) {
             // Log error and throw a more user-friendly exception
             error_log("Database connection failed: " . $e->getMessage());
@@ -72,6 +82,16 @@ class Database {
      * Execute a prepared statement
      */
     public function query($sql, $params = []) {
+        // If running in stub mode (no PDO), return a fake statement object with safe defaults
+        if ($this->stubMode || $this->pdo === null) {
+            return new class {
+                public function execute($p = []) { return true; }
+                public function fetch() { return false; }
+                public function fetchAll() { return []; }
+                public function rowCount() { return 0; }
+            };
+        }
+
         try {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($params);
@@ -86,6 +106,11 @@ class Database {
      * Insert data and return last insert ID
      */
     public function insert($sql, $params = []) {
+        if ($this->stubMode || $this->pdo === null) {
+            // Return 0 to indicate no real insert occurred
+            return 0;
+        }
+
         $this->query($sql, $params);
         return $this->pdo->lastInsertId();
     }
@@ -94,6 +119,10 @@ class Database {
      * Fetch a single row
      */
     public function fetchOne($sql, $params = []) {
+        if ($this->stubMode || $this->pdo === null) {
+            return false;
+        }
+
         $stmt = $this->query($sql, $params);
         return $stmt->fetch();
     }
@@ -102,6 +131,10 @@ class Database {
      * Fetch all rows
      */
     public function fetchAll($sql, $params = []) {
+        if ($this->stubMode || $this->pdo === null) {
+            return [];
+        }
+
         $stmt = $this->query($sql, $params);
         return $stmt->fetchAll();
     }
@@ -110,6 +143,10 @@ class Database {
      * Execute a statement (for INSERT, UPDATE, DELETE)
      */
     public function execute($sql, $params = []) {
+        if ($this->stubMode || $this->pdo === null) {
+            return 0;
+        }
+
         $stmt = $this->query($sql, $params);
         return $stmt->rowCount();
     }
@@ -118,13 +155,22 @@ class Database {
      * Get last inserted ID
      */
     public function lastInsertId() {
+        if ($this->stubMode || $this->pdo === null) return 0;
         return $this->pdo->lastInsertId();
+    }
+
+    /**
+     * Returns whether the Database is running in stub (no-db) mode
+     */
+    public function isStubMode() {
+        return $this->stubMode === true;
     }
     
     /**
      * Count rows
      */
     public function count($sql, $params = []) {
+        if ($this->stubMode || $this->pdo === null) return 0;
         $stmt = $this->query($sql, $params);
         return $stmt->rowCount();
     }

@@ -11,11 +11,23 @@ header("Expires: 0"); // Proxies
 require_once '../app/Services/Global/fncs.php';
 require_once '../config/conf.php';
 require_once '../app/Services/Global/Database.php';
+// If running without DB, load stub provider
+require_once __DIR__ . '/../app/Services/Global/StubData.php';
 
 $ObjFncs = new fncs();
 $db = new Database($conf);
+$stubProvider = new StubData();
 
-// Check if user is logged in
+// If DB is stubbed, ensure a demo user is present in session for UI testing
+if ($db->isStubMode()) {
+    if (!isset($_SESSION['user_id'])) {
+        $u = $stubProvider->getSampleUser();
+        $_SESSION['user_id'] = $u['id'];
+        $_SESSION['user_name'] = $u['full_name'];
+        $_SESSION['user_email'] = $u['email'];
+    }
+}
+
 $is_logged_in = isset($_SESSION['user_id']);
 if (!$is_logged_in) {
     header('Location: auth/signin.php');
@@ -32,42 +44,49 @@ $search = $_GET['search'] ?? '';
 
 // Get user's recent notes with search capability
 try {
-    $where_clauses = ["notes.user_id = ?"];
-    $params = [$user_id];
-    
-    if (!empty($search)) {
-        $search_term = "%$search%";
-        $where_clauses[] = "(notes.title LIKE ? OR notes.content LIKE ? OR notes.tags LIKE ?)";
-        $params[] = $search_term;
-        $params[] = $search_term;
-        $params[] = $search_term;
+    if ($db->isStubMode()) {
+        // Use stub data for UI testing
+        $user_notes = $stubProvider->getUserNotes($user_id);
+        $stats = $stubProvider->getStats($user_id);
+        $nav_counters = $stubProvider->getNavCounters();
+    } else {
+        $where_clauses = ["notes.user_id = ?"];
+        $params = [$user_id];
+        
+        if (!empty($search)) {
+            $search_term = "%$search%";
+            $where_clauses[] = "(notes.title LIKE ? OR notes.content LIKE ? OR notes.tags LIKE ?)";
+            $params[] = $search_term;
+            $params[] = $search_term;
+            $params[] = $search_term;
+        }
+        
+        $where_sql = implode(' AND ', $where_clauses);
+        
+        $sql = "SELECT notes.*, 
+                       CASE 
+                           WHEN notes.note_type = 'file' THEN notes.content
+                           ELSE SUBSTRING(notes.content, 1, 150)
+                       END as preview
+                FROM notes 
+                WHERE $where_sql 
+                ORDER BY notes.updated_at DESC 
+                LIMIT 6";
+        
+        $user_notes = $db->fetchAll($sql, $params);
+        
+        // Get user statistics
+        $stats = [
+            'total_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE user_id = ?", [$user_id])['count'],
+            'public_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE user_id = ? AND is_public = ?", [$user_id, 1])['count']
+        ];
+        
+        // Get navigation counters
+        $nav_counters = [
+            'my_notes_count' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE user_id = ?", [$user_id])['count'],
+            'shared_notes_count' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE is_public = 1", [])['count']
+        ];
     }
-    
-    $where_sql = implode(' AND ', $where_clauses);
-    
-    $sql = "SELECT notes.*, 
-                   CASE 
-                       WHEN notes.note_type = 'file' THEN notes.content
-                       ELSE SUBSTRING(notes.content, 1, 150)
-                   END as preview
-            FROM notes 
-            WHERE $where_sql 
-            ORDER BY notes.updated_at DESC 
-            LIMIT 6";
-    
-    $user_notes = $db->fetchAll($sql, $params);
-    
-    // Get user statistics
-    $stats = [
-        'total_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE user_id = ?", [$user_id])['count'],
-        'public_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE user_id = ? AND is_public = ?", [$user_id, 1])['count']
-    ];
-    
-    // Get navigation counters
-    $nav_counters = [
-        'my_notes_count' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE user_id = ?", [$user_id])['count'],
-        'shared_notes_count' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE is_public = 1", [])['count']
-    ];
     
 } catch (Exception $e) {
     error_log("Dashboard error: " . $e->getMessage());
