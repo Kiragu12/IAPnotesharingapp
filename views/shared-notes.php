@@ -6,17 +6,23 @@
 session_start();
 
 // Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: auth/signin.php');
-    exit();
-}
-
+// Load config and services
 require_once '../config/conf.php';
 require_once '../app/Services/Global/Database.php';
 require_once '../app/Services/Global/fncs.php';
+require_once __DIR__ . '/../app/Services/Global/StubData.php';
 
 $ObjFncs = new fncs();
 $db = new Database($conf);
+$stubProvider = new StubData();
+
+// If DB is stubbed, ensure demo user in session for UI testing
+if ($db->isStubMode() && !isset($_SESSION['user_id'])) {
+    $u = $stubProvider->getSampleUser();
+    $_SESSION['user_id'] = $u['id'];
+    $_SESSION['user_name'] = $u['full_name'];
+    $_SESSION['user_email'] = $u['email'];
+}
 
 // Get current user info
 $user_id = $_SESSION['user_id'];
@@ -65,25 +71,35 @@ switch ($sort_by) {
 
 // Get notes with user information
 try {
-    $sql = "SELECT notes.*, users.full_name, users.email,
-                   CASE 
-                       WHEN notes.note_type = 'file' THEN notes.content
-                       ELSE SUBSTRING(notes.content, 1, 200)
-                   END as preview
-            FROM notes 
-            LEFT JOIN users ON notes.user_id = users.id 
-            WHERE $where_sql 
-            $order_sql";
-    
-    $notes = $db->fetchAll($sql, $params);
-    
-    // Get statistics
-    $stats = [
-        'total_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE is_public = ?", [1])['count'],
-        'text_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE is_public = ? AND note_type = ?", [1, 'text'])['count'],
-        'file_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE is_public = ? AND note_type = ?", [1, 'file'])['count'],
-        'total_users' => $db->fetchOne("SELECT COUNT(DISTINCT user_id) as count FROM notes WHERE is_public = ?", [1])['count']
-    ];
+    if ($db->isStubMode()) {
+        $notes = $stubProvider->getPublicNotes();
+        $stats = [
+            'total_notes' => count($notes),
+            'text_notes' => count(array_filter($notes, function($n){ return ($n['note_type'] ?? '') === 'text'; })),
+            'file_notes' => count(array_filter($notes, function($n){ return ($n['note_type'] ?? '') === 'file'; })),
+            'total_users' => 1
+        ];
+    } else {
+        $sql = "SELECT notes.*, users.full_name, users.email,
+                       CASE 
+                           WHEN notes.note_type = 'file' THEN notes.content
+                           ELSE SUBSTRING(notes.content, 1, 200)
+                       END as preview
+                FROM notes 
+                LEFT JOIN users ON notes.user_id = users.id 
+                WHERE $where_sql 
+                $order_sql";
+        
+        $notes = $db->fetchAll($sql, $params);
+        
+        // Get statistics
+        $stats = [
+            'total_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE is_public = ?", [1])['count'],
+            'text_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE is_public = ? AND note_type = ?", [1, 'text'])['count'],
+            'file_notes' => $db->fetchOne("SELECT COUNT(*) as count FROM notes WHERE is_public = ? AND note_type = ?", [1, 'file'])['count'],
+            'total_users' => $db->fetchOne("SELECT COUNT(DISTINCT user_id) as count FROM notes WHERE is_public = ?", [1])['count']
+        ];
+    }
     
 } catch (Exception $e) {
     error_log("Error fetching shared notes: " . $e->getMessage());

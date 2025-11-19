@@ -16,6 +16,10 @@ $ObjSendMail = new SendMail();
 $ObjAuth = new auth();
 $db = new Database($conf);
 
+// Stub data provider for no-db mode
+require_once __DIR__ . '/../../app/Services/Global/StubData.php';
+$stubProvider = new StubData();
+
 // Debug logging for signin.php
 $debug_log = __DIR__ . '/../../debug.log';
 error_log("DEBUG: signin.php accessed - Method: " . ($_SERVER['REQUEST_METHOD'] ?? 'NOT SET') . " - " . date('Y-m-d H:i:s'), 3, $debug_log);
@@ -33,7 +37,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
     if (!empty($_POST)) {
         error_log("DEBUG: POST data in signin.php: " . print_r($_POST, true), 3, $debug_log);
     }
-    
+
+    // If running in stub/no-db mode, accept the credentials and create a demo session
+    if ($db->isStubMode()) {
+        $u = $stubProvider->getSampleUser();
+        $_SESSION['user_id'] = $u['id'];
+        $_SESSION['user_name'] = $u['full_name'];
+        $_SESSION['user_email'] = $u['email'];
+        // Redirect to dashboard
+        header('Location: ../dashboard.php');
+        exit();
+    }
+
     require_once '../../config/ClassAutoLoad.php';
     // This will redirect to two_factor_auth.php if successful
     $ObjAuth->login($conf, $ObjFncs, $ObjSendMail);
